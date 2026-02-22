@@ -1,0 +1,49 @@
+def verify( //returns a bool for if the path was valid, a nullable list of excluded nodes
+    screen,
+    path, //takes flattened path, NOT absolute path
+    walls,
+    nodeMap,
+    originNodeOffset,
+    nodeSeparation,
+    mapOffset,
+    jumpHeight, //unnecessary? - included in jumpRadius
+    jumpRadius,
+    xGraphLimit
+    ):
+    vertexTravellingDown = null //vertex where path starts going down
+    vertexTravellingUp = null //vertex where path starts going up
+    topVertex = null //vertex where path stops going up
+    travellingUp = false
+
+    previousNodeIndex = 0
+    currentNodeIndex = 1
+
+    while currentNodeIndex != path.length:
+        if path[previousNodeIndex][1] < path[currentNodeIndex][1]: //current lower than previous
+            vertexTravellingDown = previousNodeIndex
+        elif path[previousNodeIndex][1] > path[currentNodeIndex][1]: //previous lower than current
+            vertexTravellingUp = previousNodeIndex
+            topVertex = currentNodeIndex
+            travellingUp = true
+        
+        if travellingUp:
+            travellingUp = false
+            if path[currentNodeIndex][0] > path[previousNodeIndex][0]:
+                direction = "right"
+            else:
+                direction = "left"
+            gapFeedback = crossGap(
+                screen,
+                walls,
+                path,
+                path[vertexTravellingDown],
+                path[topVertex],
+                originNodeOffset,
+                nodeSeparation,
+                jumpRadius
+            )
+            jumpSucceeded = gapFeedback[0]
+            path = gapFeedback[1]
+            height = (path[vertexTravellingUp][1] - path[topVertex][1]) * nodeSeparation
+            if height > jumpHeight AND NOT jumpSucceeded:
+                

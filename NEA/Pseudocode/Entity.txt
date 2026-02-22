@@ -1,0 +1,144 @@
+IMPORT pygame
+
+class Entity inherits PhysicsObject
+    public isGrounded: bool
+    protected _jumpForce: float
+    protected _originalAttributes: Map<string, float>
+    protected _maxHP: int
+    public remainingHP: int
+    protected _defense: int
+    protected _speed: float
+    public attackCooldown: float
+    public cooldownRemaining: float
+    protected _effects: Map<string, array[2]> #string: array[2] => f"{effectID}-{instance}": [effect, timeout]
+
+    public procedure addEffect(ID: int):
+        freeInstance = false
+        currInstance = 0
+        while NOT freeInstance:
+            if NOT _effects.contains(str(ID) + "-" + str(currInstance)):
+                freeInstance = true
+            else:
+                currInstance += 1
+            endif
+        endwhile
+        _effects.add(
+            str(ID)+"-"+str(currInstance),
+            allEffects[ID] #allEffects is an imported dictionary containing all effects in the game in the format: array[2]
+        )
+    endprocedure
+    
+    #default instance to -1 to remove all instances of effect and default ID to -1 to remove all effects
+    #forced is a local variable which tracks if an effect timed out or was forcefully removed by another function
+    public procedure removeEffect(ID: int = -1, instance: str = "-1", forced: bool =false):
+        if ID > -1:
+            if int(instance) > -1 AND _effects.contains(str(ID)+"-"+instance):
+                _effects.remove(str(ID)+"-"+instance)
+            elif int(instance) < 0:
+                for key in _effects.keys:
+                    if int(key.split("-")[0]) == ID:
+                        _effects.remove(key)
+                    endif
+                endfor
+            endif
+        else:
+            _effects = {}
+        endif
+        #if the removal was forced, _recalculateAttributes() wouldn't have been run, so we need to run it here
+        if forced:
+            _recalculateAttributes()
+        endif
+    endprocedure
+
+    protected procedure _recalculateAttributes():
+        _maxHP = _originalAttributes["maxHP"]
+        _defense = _originalAttributes["defense"]
+        _speed = _originalAttributes["speed"]
+        attackCooldown = _originalAttributes["attackCooldown"]
+        for key, value in _effects:
+            splitValue = value.split(", ").split(" ") #double split to cover effects which affect multiple attributes
+            for effect in splitValue:
+                modifyStat(effect[0], effect[1], effect[2])
+            endfor
+        endfor
+        _velocityCap *= _speed #increase speed cap by a factor of _speed
+    endprocedure
+
+    protected procedure modifyStat(stat: string, operator: string, magnitude: float):
+        switch stat:
+            case "jumpForce":
+                _jumpForce = _jumpForce operator magnitude
+            case "maxHP":
+                _maxHP = _maxHP operator magnitude #effect is a string in the format "[affected_variable] [operator] [operand]"
+            case "defense":
+                _defense = _defense operator magnitude
+            case "speed":
+                _speed = _speed operator magnitude
+            case "cooldown":
+                attackCooldown = attackCooldown operator magnitude
+        endswitch
+    endprocedure
+
+    public procedure jump():
+        _velocity.x += _jumpForce
+        isGrounded = false
+    endprocedure
+
+    public procedure update(collidableObjects: List<Object>):
+        for key in _effects.keys:
+            _effects[key][1] -= 1/FPS #FPS is a global variable denoting the number of game updates per second - 1/FPS is the time since last frame
+            if _effects[key][1] <= 0:
+                removeEffect(ID=int(key.split("-")[0]), instance=key.split("-")[1], forced=false)
+
+        if simulated:
+            _recalculateAttributes()
+
+            recalculateResultantForce()
+            _acceleration = getAcceleration(accelerationMultiplier=_speed)
+            velocityChanged, initialVelocity, finalVelocity, directionChanged = getVelocity()
+            displaceObject(velocityChanged=velocityChanged, initialVelocity=initialVelocity, finalVelocity=finalVelocity, directionChanged=directionChanged, collidableObjects=collidableObjects)
+
+            rect.clamp_ip(pygame.display.get_surface().get_rect())
+            screen.blit(gameObj, rect)
+    endprocedure
+
+    public procedure new(
+            jumpForce: float,
+            maxHP: int,
+            defense: int,
+            speed: float,
+            pAttackCooldown: float,
+            pSize: pygame.math.Vector2,
+            spritePath: string,
+            pTag: string = "None",
+            pMass: float,
+            startingPosition: pygame.math.Vector2,
+            startingVelocity: pygame.math.Vector2 = pygame.math.Vector2(0,0),
+            pVelocityCap: pygame.math.Vector2
+        )
+        super.new(
+            pSize=pSize,
+            spritePath=spritePath,
+            pTag=pTag,
+            pMass=pMass,
+            startingPosition=startingPosition,
+            startingVelocity=startingVelocity,
+            pVelocityCap=pVelocityCap
+        )
+        isGrounded = false
+        _jumpForce = jumpForce
+        _originalAttributes = {
+            "maxHP": maxHP,
+            "defense": defense,
+            "speed": speed,
+            "attackCooldown": pAttackCooldown
+        }
+        _maxHP = maxHP
+        remainingHP = maxHP
+        _defense = defense
+        _speed = speed
+        attackCooldown = pAttackCooldown
+        cooldownRemaining = 0.0
+        _effects = {}
+    endprocedure
+endclass

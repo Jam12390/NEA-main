@@ -1,0 +1,126 @@
+IMPORT pygame
+
+class Player inherits Entity
+    public inventory: Map<Int, array[3]> #array[3] contains [tag: string, details: string, quantity: int (if applicable)]. details at index 1 is of dynamic datatype determined by tag (e.g. tag="item" => details: array[2])
+    private __offset: pygame.math.Vector2
+    public weapon: Weapon
+
+    public function pickupItem(ID: int, replaces: string, itemPosition: array[2]):
+        newData = null #used by item to check if its data needs to change
+        if replaces == "weapon":
+            newData = weapon.ID
+            weapon.killSelf() #destroy the current weapon
+            weapon = Weapon(pID=ID, offset=__offset) #and replace it with a new instance of the picked up weapon
+        elif replaces.isdigit(): #if replaces is an ID (defaults to item)
+            if ID in inventory: #presence check for item to replace
+                newData = ID
+                inventory.remove(ID) #delete it
+            endif
+            inventory.add(ID, ["item", allItems[ID]["details"], 1]) #add the new item to the inventory
+        elif ID in inventory: #if there is nothing to replace and the item is in the inventory
+            inventory[ID][2] += 1 #increment the quantity of said item
+        else: #otherwise
+            inventory.add(ID, ["item", allItems[ID]["details"], 1]) #add the item normally
+        endif
+        return newData
+    endfunction
+
+    protected procedure _recalculateAttributes()
+        _maxHP = _originalAttributes["maxHP"]
+        _defense = _originalAttributes["defense"]
+        _speed = _originalAttributes["speed"]
+        attackCooldown = _originalAttributes["attackCooldown"]
+        for value in inventory.values: #value is in format [tag: string, details: string]
+            if value[0] == "item":
+                splitValue = value[1].split(", ").split(" ") #double split to cover effects which affect multiple attributes
+                for effect in splitValue: #effect is now in format [variableAffected: string, operator: string, operand: float]
+                    for i=0 to value[2]:
+                        modifyStat(effect[0], effect[1], effect[2])
+                    endfor
+                endfor
+            endif
+        endfor
+        for key, value in _effects:
+            splitValue = value.split(", ").split(" ") #double split to cover effects which affect multiple attributes
+            for effect in splitValue:
+                modifyStat(effect[0], effect[1], effect[2])
+            endfor
+        endfor
+    endprocedure
+
+    public procedure crouch():
+        pass #placeholder for development since crouch() uses a lot of pygame specific functions, which are specific to python.
+    endprocedure
+
+    public procedure uncrouch():
+        pass #same reasons as crouch()
+    endprocedure
+
+    public procedure update(collidableObjects: List<Object>):
+        for key in _effects.keys:
+            _effects[key][1] -= 1/FPS #FPS is a global variable denoting the number of game updates per second - 1/FPS is the time since last frame
+            if _effects[key][1] <= 0: #check if any effects have timed out
+                removeEffect(ID=int(key.split("-")[0]), instance=key.split("-")[1], forced=false) #if they have, remove it
+            endif
+        endfor
+
+        if simulated: #player should always be simulated, however adding this option should simplify adding effects such as frozen
+            _recalculateAttributes()
+
+            recalculateResultantForce()
+            _acceleration = getAcceleration(accelerationMultiplier=_speed)
+            velocityChanged, initialVelocity, finalVelocity, directionChanged = getVelocity()
+            displacement = displaceObject(velocityChanged=velocityChanged, initialVelocity=initialVelocity, finalVelocity=finalVelocity, directionChanged=directionChanged, collidableObjects=collidableObjects)
+            weapon.rect.center += displacement[0]
+            if directionChanged:
+                weapon.gameObj = pygame.transform.flip(gameObj, true, false) #flip the weapon sprite on the x axis
+                if _velocity.x < 0: #right -> left
+                    weapon.rect.center.x -= __offset.x * 2 #move the weapon center left by 2*offset to swap the side it's attached to
+                else: #left -> right
+                    weapon.rect.center.x += __offset.x * 2
+                endif
+            endif
+
+            rect.clamp_ip(pygame.display.get_surface().get_rect())
+            screen.blit(gameObj, rect)
+        endif
+
+        weapon.rect.clamp_ip(pygame.display.get_surface().get_rect())
+        screen.blit(weapon.gameObj, weapon.rect) #since Player manages Weapon, its position is updated with player
+    endprocedure
+
+    public procedure new(
+            offset: pygame.math.vector2
+            jumpForce: float
+            maxHP: int,
+            defense: int,
+            speed: float,
+            pAttackCooldown: float,
+            pSize: pygame.math.Vector2,
+            spritePath: string,
+            pTag: string = "None",
+            pMass: float,
+            startingPosition: pygame.math.Vector2,
+            startingVelocity: pygame.math.Vector2 = pygame.math.Vector2(0,0),
+            pVelocityCap: pygame.math.Vector2
+            startingWeaponID: int = 0
+        )
+        super.new(
+            jumpForce=jumpForce
+            maxHP=maxHP,
+            defense=defense,
+            speed=speed,
+            pAttackCooldown=pAttackCooldown,
+            pSize=pSize,
+            spritePath=spritePath,
+            pTag=ptag,
+            pMass=pMass,
+            startingPosition=startingPosition,
+            startingVelocity=startingVelocity,
+            pVelocityCap=pVelocityCap
+        )
+        inventory = {}
+        __offset = offset
+        weapon = Weapon(pID=startingWeaponID, startingPosition=pygame.math.Vector2(rect.centerx + __offset.x, rect.centery + __offset.y))
+    endprocedure
+endclass

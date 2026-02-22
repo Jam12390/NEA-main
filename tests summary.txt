@@ -1,0 +1,288 @@
+tests summary:
+1. list out of range errors (normal run):
+	caused by erroneous index limiting
+2. infinite topNodes expansion (normal run):
+	caused due to constTopNodes (exclusion list) resetting each loop
+3. node superposition (normal run):
+	a floor node to be checked registered 1 node below the floor
+	cause: checking airNodes iterated top to bottom instead of bottom to top
+	solution: set reverse to true in sorted on the y axis
+4. jumpNodes not marking extra floors
+	Corners too high
+	findJumpNodes had multiple errors in its ratios loops, equations etc
+	=> decided to re-code findJumpNodes from scratch
+
+Re-coding:
+1. points found across curve are absurdly high
+	the points themselves weren't high, they were anomalies from 1b while the normal points weren't drawn
+1a. roots of suvat are wrong
+	g was meant to be divided by 2 (g was never divided by 2)
+1b. curve never goes down
+	t is positive instead of negative when direction == "l". With the suvat equation being correct for "l", this causes the positive values for s to be used which are negative with an extreme gradient, explaining 1.
+
+Post error 1.:
+	The points list from 1. now contains normal values, swapping at the y axis
+
+2. topNodes returning values in the floor
+	cause: rounding in nearestNode caused a node 1 higher than expected to be returned, this added to the main code caused a floor node to be added to topNodes
+	fix: remove rounding
+
+3. graph began mimicking a cubic equation rather than a quadratic and phasing through top left floor
+	cause: roofHit only depended on an adjacent node being empty and not the graph's gradient. Since the top left platform is 1 node thick, this condition was met and the graph kept on flipping at each ground intercept.
+	fix: add a dependency on velocity being > 0 for roofHit to be true
+
+4. inconsistent jumpHeight in nodes between traverseFloor and jumpOffEdge
+	cause: traverseFloor only used jumpForce//nodeSep instead of solving for the maximum point in s = ut + 0.5at^2
+	fix: implemented solveV for traverseFloor, solved for maximum point and then //nodeSep.
+
+5. inconsistent jumpHeights between different floors AND new corners from jumpOffEdge not being added to corners in precompileGraphs
+
+to check:
+- right corner on top left platform (direction = "l" or first corner phasing through floor again?)
+- traversal of top left platform
+- traversal of first platform (tf is that massive spike??) (any return above y=10 is invalid)
+	- corner (8, 19) is in direction "l" when it should be "r" -> incorrect if statement
+	- spikes are from jumpOffEdge's equation scaling improperly with jumpHeightInNodes (caused by previous value tweaking)
+	- 1 more weird spike on the topleft platform - check if increasing numberOfNodes fixes it
+	- another sign error in findPointsAcrossCurve causing a quadratic (potentially)
+		- incorrect - the if statement for ds/dt was the wrong way around (< when it should have been >=) when checking for a roofHit
+- bottom platform is fine
+
+
+note:
+i can't think about pathing anymore so instead ive decided to do some documentation
+so i dont lose my train of thought im writing it here:
+i need to add waypoints to corners in my precompiled graph
+to do this i can track the new floors corners interact with using their y coordinate
+then, i can listen for when a corner of the opposite direction is found on that floor
+and add a waypoint
+higher floors require a test to see if the lower corner can travel up
+but dont need a test to travel down
+
+
+pathing:
+
+topdownpath notes:
+	- getAdjacentNodes always returning false
+		Cause: graph node tuples are of length 3, therefore (node[0], node[1]) is technically in the graph as a coordinate but isn't recognised as numberOfNodes
+		Fix: strip the graph of all third items by making a new list called strippedGraph
+	- infinite loop over first node
+		Cause: forgot to set currentNode.visited to True so getNextNodeToVisit always returned the first node
+	- infinite loop when compiling path (same node repeated yes number of times)
+		Cause: wasnt accessing the coord part of previousNode causing currentNode to never change
+
+waypoint pathing notes:
+	- connectAdjacentPoints doesn't do anything
+		Cause: unnecessary addition in if statement
+	- getAdjacentNodes adding the current node to its response
+		Cause: missed case in if statement (checked for "->" but not "<->" in the first if statement causing the wrong side of the waypoint to be appended)
+	- 1 waypoint randomly missing from findPathsFromQueries
+		Cause: range used len - 1 causing the loop to end 1 early
+
+	post bug testing for waypoint pathing:
+	- Origin: (19, 6) End: (16, 11)
+		Result: [(19, 6), (19, 7), (19, 8), (19, 9), (16, 10), (16, 11)] => expected
+	- Origin: (5, 8) End: (16, 11)
+		Result: [(5, 8), (16, 11)] => expected
+	- Origin: (16, 11) End: (5, 8)
+		Result: [] (Unreachable) => expected
+	- Origin: (94, 1) End: (5, 8)
+		Result: [] (Unreachable) => expected
+	- Origin: (5, 8) End: (94, 1)
+		Result: [] (Unreachable) => expected
+
+final pathing notes:
+	- None keeps getting passed to getHeuristic resulting in a typeError and referencing nodeMap coordinates results in an index out of range error
+		Cause: pathfind was using the non-stripped graph causing the check for getHeuristic to find no nodes, hence causing an error while nodeMap was using the precompiledGraph instead of the whole map
+	- Paths were incomplete from startNode to nearestStartWaypoint and from nearestEndWaypoint to endNode
+		Cause: the inbetween pathing only used waypointPath and excluded the paths from the startNode to the nearestStartWaypoint and from the nearestEndWaypoint to the endNode
+		Fix: added explicit additions for these 2 points
+
+	- testGraph ID 1 errored through splitAt in connectAdjacentWaypoints since splitAt only appended the index as a waypoint, not the corners.
+		Fix: add a reference to group using the index. (Also added an ignoreNext variable so waypoints on the same y coordinate which didn't connect weren't seen as connected)
+	- testGraph ID 1 errored through deleting the floor
+		Cause: 
+			1. direction "l" has no effect => False
+			2. findLowerNodes is going 1 too low sometimes
+			Overall - jumpOffEdge never checked if a floor was hit to end the traversal
+			Fix: Added check for hitFloor and added an iteration through topNodes to remove any floorNodes
+
+	- nodes encased in a wall find no nodes as waypoints
+		Cause: jumpForce too high, therefore first node is # and jump stops
+		Fix: implement fallOffEdge where the precompile algorithm doesn't jump before going off the edge
+	- efficiency:
+		- waypoints size scales too high slowing algorithm
+			Cause: connectAdjacentWaypoints is extremely space inefficient
+			Fix: compressWaypoints + some logic changing in pathing.py
+			- waypoints using compressed connector ("-") are causing issues when being passed to queryWaypoints since waypoints inbetween waypoint[0] and waypoint[2] aren't being included in return
+				Fix: recursively call queryWaypoints with all nodes between waypoint[0] and waypoint[2] inclusive with a new parameter ignoreCompressed to ignore waypoints with the connector "-".
+				Note: linear search may worsen efficiency
+			- for some reason some paths which are valid using connectAdjacentPoints aren't valid using compressWaypoints (all nodes are being marked as visited when there are still available nodes)
+				Debug:
+					(26, 32) -> [(28, 34), (27, 33)]: True
+					(27, 33) -> [(27, 36), (29, 35), (27, 37)]: True
+					(28, 34) -> [(29, 36)]: True
+					(29, 35) -> []: True
+					(29, 36) -> []: True
+					(27, 36) -> []: True
+					(27, 37) -> [(24, 38)]: True
+					(24, 38) -> [(23, 33), (24, 40)]: True
+					(23, 33) -> [(22, 32)]: True
+					(24, 40) -> [(21, 41)]: True
+					(22, 32) -> []: True
+					(21, 41) -> [(24, 39)]: True
+					(24, 39) -> []: True
+					Unvisited but *can* connect to: [(21, 30)]
+					sacked off
+
+Blackbox Testing:
+	sideJumpsExtreme.csv
+		- Start: (18, 6)
+		- End: (3, 31)
+		Test: Cross map pathing
+		Fail: intermediatePoint => Nonetype has no attribute getCoord()
+		Cause: correct node was 1 node right of maxima
+		Fix: remove solveForMaxima and deal with reduced efficiency OR come up with new equation based off accuracy to render 1 node after maxima
+
+MapLoading:
+	Initial offset incorrect, loaded data at topleft of visible window
+	Cause: Inverted offset
+	Fix: Return offset to original value
+	
+	[Increased tile size 10x]
+	Initial offset incorrect, loaded data too far down and a bit too far right
+	Expected startNode: (16, 0) => Offset: (-50, 1550) with tileSize 100
+	Cause: Never found out, I assume it was from a mistake in how I was handling pygame's coordinate system, or adding unnecessary values
+	Fix: Toyed around with tileSize / 2 and adding/subtracting screenSize / 2 from initialOffset depending on the axis. Also added offset depending on player size to ensure the player always starts on the ground.
+	End Tests:
+		- tileSize = 100: Pass
+		- tileSize = 50: Pass
+		- tileSize = 75: Pass
+		- tileSize = 900: Pass
+
+	+isGrounded is never true, preventing the player from ever jumping
+		- no "floor" tag present in mapLoading.py
+
+Camera:
+	Running into a wall sometimes causes the camera to shift in the direction the player would move
+		- //= playerMoved to round down causes 1 pixel gaps in left and right collision
+		- ignore - sprite implementation makes this acceptable
+		never fucking mind ig
+		alright time to solve this....... fml
+		maybe its from yDiff calculations? ie if both bottom corners are colliding with a difference of 1 pixel yDiff would be doubled explaining the 1 pixel gap?
+		i actually hope so
+		aaaaaaaaaaAAAAAAAAAAAAAAAAAAAAAAAAA
+
+		Cause: Unknown.
+		Fix: Reverted collision back to original renderCollision function and added extra checks for collision in different directions.
+		A victim of my own overthinking *again*
+
+	Camera now sometimes moves slowly even after player stops moving
+	fuck knows why this happens
+
+Movement:
+	Walljumping sometimes doesn't work -> from POINT 1 - removed walljumping as it didnt really fit within the game
+
+	+Player sticks to wall
+		- yFriction is maxed for some reason when running into the wall near the top
+		- WHY IS THE FRICTION COEFFICIENT 1??? THAT LITERALLY HALTS ALL MOVEMENT WTF??
+	
+		++xFriction now isn't strong enough to stop the player fast enough
+			- ohmyfuckinggod separate friction coefs need implementing to solve these errors
+	
+	+xFriction when moving left doesn't guarantee the player comes to a complete stop //FUUUUUUUUUUUUUUUUUUUUUUUUUUUCKKK
+		- IS THE FRICTION COEFFICIENT FUCKING THIS UP TOO????
+		yes.
+		- in a shocking turn of events having a 1 pixel gap between an object and the floor causes the physics engine to shit itself and decide that noooooooooo
+		the object is in fact *not* on the floor and therefore doesn't render xFriction, explaining the complete stop issue (maybe idfk at this point)
+	
+	+++FUUUUUUUKCC ;HUNJHLKDH
+		+++godsaveme repeated function calls in the physics engine causes a performance decrease shockingly who could've seen this coming??????
+			- Caused from 1 pixel error from camera goddammit + general python performance being shit
+			- Implement accuracy for physics which calls for physics updates every x seconds for each physicsObject being rendered
+	
+	All above errors caused by initial camera error
+	Attempted Fixes:
+		- //= 1: Solves error however causes 1 pixel gap
+		- round(playerMoved): Doesn't do anything past a certain speed
+		- if "l" in player.blockedMotion or "r" in player.blockedMotion:
+            playerMoved.x = 0
+        - if "u" in player.blockedMotion or "d" in player.blockedMotion:
+            playerMoved.y = 0: Same effect as //= 1
+	
+
+	+player is slightly offset each collision
+		- maybe add a 2 pixel tolerance to each direction for blockedMotion?
+
+REVERTED COMMIT "a"
+
+player.currentNode continues to move despite player being stationary
+	- cause: playerMoved clamp was too restricted (ie the player moved more in 1 frame than the clamp could catch)
+	- fix: increase clamp range
+	- suggestion: use a suvat equation to make sure the clamp is great enough
+
+player moves too far left/right in terms of currentNode if velocity is too high
+	maybe mapLoading is loading the x tiles half a tile too far right?
+	twas correct
+	fix: make 
+
+POINT 1
+same thing is happening on the y axis
+	absoluteCoordinate continues moving down even after the player becomes grounded
+	maybe since playerMoved returns a float?
+
+side note: trying to fix physicsobjects getting stuck on floor - its going great
+currently at: adding a check every frame to "unstick" the player if theyre in the ground
+been there, done that - sometimes the player bounces on hitting the floor which allows currentNode to keep changing (bad!)
+	=> totalDiff too large
+	=> in collision if both corners collide with the same tile/y-coord totalDiff is doubled (also bad!)
+	=> i implemented a variable beforehand to manage this but never finished it
+	=> no :(
+
+unstick using floats
+some collision checks not working
+consistent difference in inaccuracy (suvat?) (movement continuing for one too many frames?)
+
+issue with absoluteCoordinate during initial downwards collision
+
+lower fps has no issues
+physicsObject returns 3 on the second frame after grounding
+
+So.
+It turns out that the second frame after ground collision, physicsObject decides to add the difference // 1 to absoluteCoordinate
+which fucks things up
+since im basically out of time,
+ive gone with a jank solution which is to track if the last frame calculation was a ground collision
+if it was, then the program ignores the difference in y-calculation
+
+aaaaaaaaaaAAAAAAAAAAAAAAAAAAAAAAAAA
+I
+overthought
+it all
+i just set the y coord to the object its colliding with + 25 (tileSize)
+and it worked :D
+
+
+getting something to follow the player
+minor entity changes
+issue: entity will not travel off the screen
+clamp_ip() - that was it
+
+
+issue with going up and right
+
++issue with absoluteCoordinate and currentNode
+playing around with numbers fixed this issue
+
+
+
+terminal tests:
+basic path left - passed
+path upwards - passed
+path over object - passed
+path across map - passed
+jumping path - fail => i overcomplicated waypointJump. there was no need for a separate function to find an intermediatePoint, if there was a path found there was no need for an intermediate point :c
+camera - works
+chase across map => yes
+
+

@@ -1,0 +1,180 @@
+import math
+
+def precompileGraphs(pathDictionary, enemyInfo, nodeMap):
+    //////////
+    //TODO:
+    //- Cycle through pathDictionary and scan map for reachable nodes.
+    //To do this, we need to cycle through all floor nodes and mark nodes which the enemy can reach.
+    //Each floor will have a left corner and a right corner, both needing to be marked to track if their platform has been visited or not.
+    //While there are still unvisited floors remaining:
+    //- Pop a floor out of unvisited floors
+    //- Check which corner it references
+    //- Depending on direction, move across the floor, cycling through nodes until either a wall is hit or there is no longer a floor beneath the node
+    //For each node:
+    // - Check if there's still a floor beneath the node. If not, run the not complicated at all jumpRange function to figure out nodes which the entity can jump to
+
+
+///////// fucks sake
+
+def findJumpRangeNodes(FPS, entity, enemyInfo, jumpRadius, startingNode, nodeMap, direction, nodeSep):
+    /////////
+    //oh god what have i done
+    //SO, when we reach an edge, we need to find nodes we can jump to *off* the edge.
+    //Sure we can use the circle and line method, however this falls apart when the enemy can still reach platforms out of its circle (i.e. from falling towards the platform)
+    //(For this example, we'll assume we are jumping from the top right corner of the floor moving right with a jumpRadius of 10)
+    //SO, we draw the top right quadrant of a semi circle first, marking the highest nodes inside the circle
+    //Then, from the top right corner, we get the node 10 units away horizontally as the edge node to continue from
+    //The max angle at which the entity can fall towards is denoted as alpha which = tan^-1(maxSpeed.x/maxSpeed.y).
+    //To find the next x node which can be reached by falling, we need to solve for ymin in the equation tan(alpha) = (nodeSep/2)/ymin which is ymin = (nodeSep/2)/tan(alpha)
+    //ymin denotes the minimum distance required to fall before the next node over is the closest x node to travel to.
+    //the coordinate of this point is (currentX + 1, ymin//(nodeSep/2) + 1)
+    //b. we then move to this point and continue the function until we reach a wall on the x axis or a floor on the y axis
+    //if we reach a wall, move down each node on the same x coordinate, checking for when the wall ends (if it does)
+    //if a floor is reached, continue as if a floor was reached naturally
+    //if a floor was reached before a wall, cycle through each "top" node after the startingNode (e.g. the highest nodes in the circle)
+    //for each node:
+    //- add each node beneath it as a reachable node, checking the left and right of the node for any extra platforms
+    //- if another platform is found, pause the additions, move 1 x coordinate into the gap and recur from b.
+    //- after adding each reachable node to a list, marking vertices for addition to the main graph, we return it to the main function
+
+    ///Quarter Circle
+    //I've decided to just use a series of points on the edge of a circle instead of a full circle
+    if direction == "r":
+        operator = operators.add
+        opp = operators.sub
+    else:
+        operator = operators.sub
+        opp = operators.add
+
+    topNodes = []
+    unverifiedBuffer = []
+
+    maxYJump = jumpRadius DIV nodeSep
+    for y=0 to maxYJump:
+        xDistance = math.sqrt( jumpRadius^2 - (y * nodeSep)^2 )
+        xNode = startingNode[1] operator xDistance DIV nodeSep
+        if y == 0:
+            unverifiedBuffer.append((startingNode[0] operator y, xNode, "maxX")) //optional third index for point tag
+        else:
+            unverifiedBuffer.append((startingNode[0] operator y, xNode, null))
+    
+    ///Verifying circle points
+    for node in unverifiedBuffer:
+        x = startingNode[1]
+        y = startingNode[0]
+        while (y, x) != (node[0], node[1]):
+            if y != node[0]:
+                y = y operator 1
+            if x != node[1]:
+                x = x operator 1
+            if nodeMap[y][x] != "":
+                if NOT ((y, x, null) in topNodes OR (y, x, "maxX") in topNodes):
+                    topNodes.append((y opp 1, x opp 1, node[2]))
+                break
+            if (y, x) == (node[0], node[1]):
+                if nodeMap[y][x] == "":
+                    topNodes.append(node)
+                else:
+                    if NOT ((y, x, null) in topNodes OR (y, x, "maxX") in topNodes):
+                        topNodes.append((y opp 1, x opp 1, node[2]))
+                break
+    unverifiedBuffer = [] //reset for later
+
+    ///Getting next node to conitnue from
+    continueFrom = null
+    for node in topNodes:
+        if node[2] == "maxX":
+            continueFrom = node
+            break
+
+    //continueFrom should always exist, however if it doesn't we'll just skip this next section
+    ///Continuing down from continueFrom to find other availableNodes
+    maxSpeedX = enemyInfo[entity]["maxSpeed"][0] / FPS
+    maxSpeedY = enemyInfo[entity]["maxSpeed"][1] / FPS
+    maxAngle = math.atan(maxSpeedY/maxSpeedX)
+
+    ymin = 1/math.tan(maxAngle)
+    yToXRatio = ymin DIV nodeSep
+    count = 0
+
+    currentX = continueFrom[1]
+    currentY = continueFrom[0]
+
+    while currentY + 1 == "": //while nextY is empty
+        currentY += 1
+        count += 1
+        if count >= yToXRatio:
+            if nodeMap[currentY][currentX + 1] == "": //if the next node across isn't a wall
+            currentX += 1
+            count = 0
+            topNodes.append()
+    ////IMCOMPLETE
+
+///////////////////
+    
+    //parabolas are okay ig
+    ///Solution B: Parabolas
+    ///Proposed parameters: jumpVelocity, gravityAcceleration, startingNode, nodeMap, direction, nSep
+
+def convertCoordinatesToNode(absolute, nSep):
+    xCo = absolute[1] DIV nSep
+    xRem = absolute[1] MOD nSep
+    yCo = absolute[0] DIV nSep
+    yRem = absolute[0] MOD nSep
+
+    if xRem > nSep/2:
+        xCo += 1
+    if yRem > nSep/2:
+        yCo += 1
+    
+    return (yCo, xCo)
+
+def convertCoordinatesToAbs(node, nSep):
+    return (node[1]*nSep, node[0]*nSep)
+
+def abs(value):
+    if value < 0:
+        return value*-1
+    else:
+        return value
+
+def planB(jumpVelocity, maxSpeed, gravityAcceleration, startingNode, nodeMap, direction, nSep):
+    //Possible solutions for time: t=0, 2u/a
+    //Solutions derived from s = ut + 0.5at^2 where s=0 is the starting yCoord of startingNode
+    //The equation ends up looking like this: (s) = 0 = (+-)2ut - at^2
+    u = jumpVelocity
+    a = -gravityAcceleration
+
+    if direction = "l":
+        dirEffect = -1 //dirEffect decides whether to use the solutions from the positive or negative graph
+    else:
+        dirEffect = 1
+
+    t = [0, dirEffect * (2*u)/a] //we dont really care about t potentially becoming negative in this case :)
+
+    midT = t[1]/2
+    maxHeight = 2*u*midT - a*(midT**2)
+
+    proposedXRoots = [0, t*maxSpeed[0]]
+    steps = 10
+    startingCoordinates = convertCoordinatesToAbs(startingNode, nSep)
+
+    for x=1 to steps:
+
+
+    
+
+
+
+    
+    
+
+/////////////////////
+
+def findAllLowerNodes(nodeMap, startingNode):
+    lowerNodes = []
+    currentYCoord = startingNode[1] - 1
+    while currentYCoord < nodeMap.length AND nodeMap[currentYCoord][startingNode[0]] == "": //coordinates in index form (y, x)
+        lowerNodes.append((currentYCoord), startingNode[0])
+        currentYCoord -= 1
+    return lowerNodes

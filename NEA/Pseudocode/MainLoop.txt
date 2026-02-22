@@ -1,0 +1,90 @@
+IMPORT pygame
+IMPORT system
+IMPORT classes #classes will be stored in separate files, however for the sake of pseudocode we'll assume they're all part of the same file
+
+screenWidth = 800
+screenHeight = screenWidth*0.8 #keep the ratio for w-h at 1:0.8 - could change later
+
+pygame.init()
+
+screen = pygame.display.set_mode((screenWidth, screenHeight))
+clock = pygame.time.Clock()
+paused = false
+
+FPS = 60
+
+player = new Player(
+    offset=pygame.math.Vector2(25, 0),
+    jumpForce=50, #pixels/second
+    maxHP=100,
+    defense=5,
+    speed=1,
+    pAttackCooldown=0.75,
+    pSize=pygame.math.Vector2(50, 50),
+    spritePath="\...", #path to the player's sprite goes here
+    pTag="player",
+    pMass=5,
+    startingPosition=pygame.math.Vector2(screenWidth/2, screenHeight/2),
+    startingVelocity=pygame.math.Vector2(0, 0),
+    pVelocityCap=pygame.math.Vector2(25, 25),
+    startingWeaponID=0
+)
+
+walls = pygame.sprite.Group()
+walls.add(
+    new WallObj(
+        position=pygame.math.Vector2(screenWidth/2, (screenHeight/2)-150), #position the floor beneath the player
+        spritePath="\...", #placeholder for actual image path in development
+        pTag="floor"
+    )
+)
+
+running = true
+
+while running:
+    clock.tick(FPS)
+
+    events = pygame.event.get()
+
+    for event in events:
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            system.exit()
+        endif
+    endfor
+
+    keys = pygame.key.get_pressed()
+
+    #cycle through all potential movement inputs
+    if (keys[pygame.K_w] OR keys[pygame.K_SPACE]) AND player.isGrounded AND NOT player.blockedMotion.contains("u"):
+        player.jump()
+    endif
+    if keys[pygame.K_a] AND NOT player.containsForce(axis="x", ref="UserInputLeft") AND NOT player.blockedMotion.contains("l"):
+        player.addForce(axis="x", direction="l", ref="UserInputLeft", magnitude=25)
+    elseif NOT keys[pygame.K_a]:
+        player.removeForce(axis="x", ref="UserInputLeft")
+    endif
+    if keys[pygame.K_d] AND NOT player.containsForce(axis="x", ref="UserInputRight") AND NOT player.containsForce(axis="x", ref="UserInputLeft") AND NOT player.blockedMotion.contains("r"):
+        player.addForce(axis="x", direction="r", ref="UserInputRight", magnitude=25)
+    elseif NOT keys[pygame.K_d]:
+        player.removeForce(axis="x", ref="UserInputRight")
+    endif
+    if keys[pygame.K_s] AND NOT player.containsForce(axis="y", ref="UserInputDown") AND NOT player.blockedMotion.contains("d"):
+        player.addForce(axis="y", direction="d", ref="UserInputDown", magnitude=25)
+    elseif keys[pygame.K_s] AND player.blockedMotion.contains("d"):
+        player.crouch()
+    elseif NOT keys[pygame.K_s]:
+        player.uncrouch()
+        player.removeForce(axis="y", ref="UserInputDown")
+    endif
+
+    #update all objects (this includes collision detection)
+    player.update(collidableObjects: walls)
+    walls.update()
+
+    #draw groups and update display
+    screen.fill((0, 0, 0)) #rgb value for black background
+    player.draw(screen)
+    walls.draw(screen)
+    pygame.display.flip()
+endwhile

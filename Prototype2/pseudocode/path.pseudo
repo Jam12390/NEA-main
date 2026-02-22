@@ -1,0 +1,223 @@
+import operator
+
+//INITIAL PATH FLATTENING
+
+def flatten(
+        nodeMap,
+        path //in index form in (x, y)
+    ):
+    flattenedPath = []
+    for node in path:
+        dynaNode = [node[0], node[1]] //dynaNode is the dynamic version of the static node tuple
+        while nodeMap[dynaNode[1] + 1] == " ": //while there are available empty nodes below the current node
+            dynaNode[1] += 1: //move the current node down
+        if NOT dynaNode in flattenedPath:
+            flattenedPath.append(dynaNode)
+    
+    previousNode = 0
+    currentIndex = 1
+    finalPath = [flattenedPath[0]]
+    while currentIndex != flattenedPath.length:
+        if flattenedPath[previousNode][0] != flattenedPath[currentNode][0] AND flattenedPath[previousNode][1] != flattenedPath[currentNode][1]:
+            if flattenedPath[previousNode][1] < flattenedPath[currentNode][1]:
+                verticality = "down"
+            else:
+                verticality = "up"
+            
+            if flattenedPath[previousNode][0] < flattenedPath[currentNode][0]:
+                direction = "right"
+            else:
+                direction = "left"
+
+            if direction == "right":
+                op = operator.add
+            else:
+                op = operator.sub
+            
+            if verticality == "up":
+                finalPath.append([op(flattenedPath[currentNode][0], 1), flattenedPath[currentNode][1]])
+            else:
+                finalPath.append([op(flattenedPath[previousNode][0], 1), flattenedPath[previousNode][1]]) //adds a corner node to the final path
+
+        finalPath.append(flattenedPath[currentNode])
+        previousNode += 1
+        currentNode += 1
+    endwhile
+    return finalPath
+
+/////////////////////////////////////
+//JUMP-UPS
+/////////////////////////////////////
+
+def findIntermediatePathNode(
+        screen,
+        walls,
+        nodeMap,
+        startNode,
+        originNodeOffset,
+        nodeSeparation,
+        mapOffset,
+        jumpHeight,
+        jumpRadius,
+        xGraphLimit,
+        direction
+    ):
+
+    circleSightRadius = 70
+
+    lineStart = (
+        originNodeOffset + (startNode[0] * nodeSeparation) - mapOffset[0],
+        originNodeOffset + (startNode[1] * nodeSeparation) - mapOffset[1]
+    )
+    lineEnd = (lineStart[0], lineStart[1] - jumpHeight)
+
+    jumpLine = pygame.draw.line(
+        surface=screen,
+        color=(0,255,0),
+        start_pos=lineStart,
+        end_pos=lineEnd
+    )
+
+    collided = false
+    xLine = startNode[0]
+    yLine = startNode[1]
+
+    if direction == "l":
+        op = operator.sub
+        inverse = operator.add
+    else:
+        op = operator.add
+        inverse = operator.sub
+    
+    while (NOT collided) AND xGraphLimit[0] <= xLine AND xLine <= xGraphLimit[1]: //xGraphLimit[leftLim, rightLim]
+        jumpLine.move(op(0, nodeDistance), 0)
+        xLine = op(xLine, 1)
+        for wall in walls:
+            if pygame.Rect.colliderect(wall, jumpLine):
+                collided = true
+                jumpLine.move(inverse(0, nodeDistance), 0)
+                xLine = inverse(xLine, 1)
+                break
+    
+    platformFound = [false, null] //[found, node]
+    excludedNodes = []
+
+    if collided:
+        xCircleCenter = lineStart[0] - ((startNode[0] - xLine) * nodeDistance)
+        jumpCircle = pygame.draw.circle(surface=screen, color=(0,0,255), center=(xCircleCenter, lineStart[1]), radius=jumpRadius)
+
+        collisionState = [false, false]
+        collidedWith = null
+        previousState = null
+
+        while circleSightRadius > 0 AND NOT platformFound[0]:
+            chordLength = round(math.sqrt((2 * jumpRadius**2) * (1 - math.cosine(2 * circleSightRadius))))
+            chordLength = chordLength DIV 2
+            chordHeight = round(jumpRadius * math.cosine(circleSightRadius))
+
+            chordEnd = (op(circleCenterx, chordLength), lineStart[1] - chordHeight)
+
+            for wall in walls:
+                if pygame.Rect.collidepoint(wall, chordEnd):
+                    collisionState[1] = true
+                    collidedWith = wall
+                    break
+                else:
+                    collisionState[1] = false
+                    collidedWith = null
+            
+        if collisionState[0] AND NOT collisionState[1]:
+            found = testCollisionChange(previousState, chordEnd, chordHeight, direction)
+            if found:
+                topY = collidedWith.top[1]
+                index = yVertex DIV nodeSeparation
+                nodeIndex = (index, op(xLine, 1))
+                platformFound = [true, nodeIndex]
+        
+        previousChordState = {
+            "chord": chordEnd,
+            "collidedWith": collidedWith,
+            "chordHeight": chordHeight
+        }
+    
+    if NOT (collided OR platformFound[0]):
+        xExclusionOrigin = startNode[0] + 1
+        yExclusionOrigin = startNode[1] - (jumpHeight DIV nodeSeparation)
+        currentNode = [xExclusionOrigin, yExclusionOrigin]
+        while nodeMap[currentNode[1]][currentNode[0]] != "#": //# is the notation for a wall
+            excludedNodes.append(currentNode)
+            currentNode[1] -= 1
+        currentNode = [op(xExclusionOrigin, 1), yExclusionOrigin]
+        while nodeMap[currentNode[1]][currentNode[0]] != "#" AND xGraphLimit[0] <= currentNode[0] AND currentNode[0] <= xGraphLimit[1]:
+            excludedNodes.append(currentNode)
+            currentNode[0] = op(currentNode[0], 1)
+    
+    return [platformFound, excludedNodes]
+
+def testCollisionChange(previousState, pointToTest, currentChordHeight):
+    loweredChord = (pointToTest[0], pointToTest[1] + currentChordHeight - previousState["chordHeight"]) //reminder: + is down in terms of y-coord
+
+    if pygame.Rect.collidepoint(previousState["collidedWith"], loweredChord):
+        return true
+    else:
+        return false
+
+
+///////////////////////////////////////
+//GAPS
+///////////////////////////////////////
+
+def crossGap(
+        screen,
+        walls,
+        path,
+        startNode,
+        endNode,
+        originNodeOffset,
+        nodeSeparation,
+        jumpRadius
+    ):
+    startPoint = (
+        originNodeOffset + startNode[0] * nodeSeparation,
+        originNodeOffset + startNode[1] * nodeSeparation
+    )
+    endPoint = (
+        originNodeOffset + endNode[0] * nodeSeparation,
+        originNodeOffset + endNode[1] * nodeSeparation
+    )
+
+    sightLine = pygame.draw.line(screen, (0, 0, 255), startPoint, endPoint)
+
+    for wall in walls:
+        if wall.clipline(sightLine).length != 0:
+            return [false, path]
+    
+    if math.sqrt((endPoint[0] - startPoint[0])**2 - (endPoint[1] - startPoint[1])**2) <= jumpRadius:
+        path = cropPath(path, startNode, endNode)
+        return [true, path]
+    return [false, path]
+
+def cropPath(path, cropStart, cropEnd):
+    currentIndex = path.index(cropStart) + 1
+    while path[currentIndex] != cropEnd:
+        path.remove(currentIndex)
+    path.insert(currentIndex, "JUMP")
+    return path
+
+//////////////////////////////////
+//POST EXCLUSION CLEANUP
+//////////////////////////////////
+
+def cleansePathingState(dirtyTable, excludedNodes):
+    toClean = new Stack("unlimited")
+    for node in excludedNodes:
+        if node in dirtyTable:
+            toClean.push(node)
+    
+    while NOT toClean.isEmpty():
+        currentNode = toClean.pop()
+        for node in dirtyTable[node]["nextNodes"]:
+            toClean.push(node)
+        del dirtyTable[currentNode]
+    
+    return dirtyTable //now clean

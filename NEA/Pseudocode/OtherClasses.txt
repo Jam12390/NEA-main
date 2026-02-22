@@ -1,0 +1,107 @@
+IMPORT pygame
+
+class Weapon inherits pygame.sprite.Sprite
+    public ID: int
+    public gameObj: pygame.image
+    public rect: pygame.rect
+    public damage: float
+    private __currentlyAttacking: bool
+    private __attackTimer: float
+    private __anim: [unknown]
+
+    private procedure playAnim():
+        pass
+    endprocedure
+
+    public procedure attack(parent: Object):
+        if parent.simulated AND __attackTimer <= 0: #the instance of object will be whichever entity has the weapon (e.g. Player.simulated)
+            currentlyAttacking = true
+            __attackTimer = __anim["time"] #treating __anim as a map here since it's the easiest to read and understand
+            playAnim()
+    endprocedure
+    
+    public procedure update():
+        __attackTimer -= 1/FPS
+        if __attackTimer <= 0:
+            currentlyAttacking = false
+    endprocedure
+
+    public procedure killSelf():
+        kill()
+    endprocedure
+
+    public procedure new(pID: int, startingPosition: pygame.math.Vector2): #allWeapons is an imported dictionary containing the data for all weapons in the game
+        ID = pID
+        gameObj = pygame.transform.smoothscale(pygame.image.load(allWeapons[pID]["imgPath"]), (allWeapons[pID]["size"].x, allWeapons[pID]["size"].y))
+        rect = pygame.get_rect(gameObj)
+        rect.center = (startingPosition.x, startingPosition.y) #offset the weapon sprite from the player's centre
+        damage = allWeapons[pID]["damage"]
+        currentlyAttacking = false
+        __attackTimer = 0
+        __anim = null #placeholder
+    endprocedure
+endclass
+
+class WallObj inherits pygame.sprite.Sprite
+    public gameObj: pygame.image
+    public tag: string
+    public rect: pygame.rect
+
+    public procedure killSelf():
+        kill()
+    endprocedure
+
+    public procedure update(): #WallObj never needs to update, however a function still needs to exist to simplify main loop's update() and to blit the object
+        screen.blit(gameObj, rect)
+    endprocedure
+
+    public procedure new(
+        size: pygame.math.Vector2
+        position: pygame.math.Vector2,
+        spritePath: string,
+        pTag: string = "wall"
+    ): #take position and imgPath as required parameters, with tag being optional (defaulted to "wall")
+        gameObj = pygame.transform.smoothscale(pygame.image.load(spritePath), (size.x, size.y))
+        tag = pTag
+        rect = pygame.get_rect(gameObj)
+        rect.center = (position.x, position.y)
+    endprocedure
+endclass
+
+class Item inherits pygame.sprite.Sprite
+    public ID: int
+    private __replaces: string
+    public gameObj: pygame.image
+    public rect: pygame.rect
+
+    public procedure pickup():
+        newData = Player.pickupItem(ID=ID, replaces=__replaces)
+        if newData != null:
+            swapItem(newID=newData)
+        else:
+            killSelf()
+        endif
+    endprocedure
+
+    public procedure killSelf():
+        kill()
+    endprocedure
+
+    public procedure swapItem(newID: int):
+        ID = newID
+        __replaces = allItems[ID]["replaces"]
+        gameObj = pygame.transform.smoothscale(pygame.image.load(allItems[ID]["imgPath"]), (100, 100))
+        screen.blit(gameObj, rect) #ensure screen updates
+
+    public procedure update(): #same as WallObj
+        screen.blit(gameObj, rect)
+    endprocedure
+
+    public procedure new(pID: int, startingPosition: pygame.math.Vector2):
+        ID = pID #all other attributes are based on the ID to ensure consistency
+        __replaces = allItems[ID]["replaces"]
+        gameObj = pygame.transform.smoothscale(pygame.image.load(allItems[ID]["imgPath"]), (100, 100))
+        rect = pygame.get_rect(gameObj)
+        rect.center = (startingPosition.x, startingPosition.y)
+    endprocedure
+endclass

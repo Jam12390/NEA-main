@@ -1,0 +1,130 @@
+tests summary:
+1. list out of range errors (normal run):
+	caused by erroneous index limiting
+2. infinite topNodes expansion (normal run):
+	caused due to constTopNodes (exclusion list) resetting each loop
+3. node superposition (normal run):
+	a floor node to be checked registered 1 node below the floor
+	cause: checking airNodes iterated top to bottom instead of bottom to top
+	solution: set reverse to true in sorted on the y axis
+4. jumpNodes not marking extra floors
+	Corners too high
+	findJumpNodes had multiple errors in its ratios loops, equations etc
+	=> decided to re-code findJumpNodes from scratch
+
+Re-coding:
+1. points found across curve are absurdly high
+	the points themselves weren't high, they were anomalies from 1b while the normal points weren't drawn
+1a. roots of suvat are wrong
+	g was meant to be divided by 2 (g was never divided by 2)
+1b. curve never goes down
+	t is positive instead of negative when direction == "l". With the suvat equation being correct for "l", this causes the positive values for s to be used which are negative with an extreme gradient, explaining 1.
+
+Post error 1.:
+	The points list from 1. now contains normal values, swapping at the y axis
+
+2. topNodes returning values in the floor
+	cause: rounding in nearestNode caused a node 1 higher than expected to be returned, this added to the main code caused a floor node to be added to topNodes
+	fix: remove rounding
+
+3. graph began mimicking a cubic equation rather than a quadratic and phasing through top left floor
+	cause: roofHit only depended on an adjacent node being empty and not the graph's gradient. Since the top left platform is 1 node thick, this condition was met and the graph kept on flipping at each ground intercept.
+	fix: add a dependency on velocity being > 0 for roofHit to be true
+
+4. inconsistent jumpHeight in nodes between traverseFloor and jumpOffEdge
+	cause: traverseFloor only used jumpForce//nodeSep instead of solving for the maximum point in s = ut + 0.5at^2
+	fix: implemented solveV for traverseFloor, solved for maximum point and then //nodeSep.
+
+5. inconsistent jumpHeights between different floors AND new corners from jumpOffEdge not being added to corners in precompileGraphs
+
+to check:
+- right corner on top left platform (direction = "l" or first corner phasing through floor again?)
+- traversal of top left platform
+- traversal of first platform (tf is that massive spike??) (any return above y=10 is invalid)
+	- corner (8, 19) is in direction "l" when it should be "r" -> incorrect if statement
+	- spikes are from jumpOffEdge's equation scaling improperly with jumpHeightInNodes (caused by previous value tweaking)
+	- 1 more weird spike on the topleft platform - check if increasing numberOfNodes fixes it
+	- another sign error in findPointsAcrossCurve causing a quadratic (potentially)
+		- incorrect - the if statement for ds/dt was the wrong way around (< when it should have been >=) when checking for a roofHit
+- bottom platform is fine
+
+
+note:
+i can't think about pathing anymore so instead ive decided to do some documentation
+so i dont lose my train of thought im writing it here:
+i need to add waypoints to corners in my precompiled graph
+to do this i can track the new floors corners interact with using their y coordinate
+then, i can listen for when a corner of the opposite direction is found on that floor
+and add a waypoint
+higher floors require a test to see if the lower corner can travel up
+but dont need a test to travel down
+
+
+pathing:
+
+topdownpath notes:
+	- getAdjacentNodes always returning false
+		Cause: graph node tuples are of length 3, therefore (node[0], node[1]) is technically in the graph as a coordinate but isn't recognised as numberOfNodes
+		Fix: strip the graph of all third items by making a new list called strippedGraph
+	- infinite loop over first node
+		Cause: forgot to set currentNode.visited to True so getNextNodeToVisit always returned the first node
+	- infinite loop when compiling path (same node repeated yes number of times)
+		Cause: wasnt accessing the coord part of previousNode causing currentNode to never change
+
+waypoint pathing notes:
+	- connectAdjacentPoints doesn't do anything
+		Cause: unnecessary addition in if statement
+	- getAdjacentNodes adding the current node to its response
+		Cause: missed case in if statement (checked for "->" but not "<->" in the first if statement causing the wrong side of the waypoint to be appended)
+	- 1 waypoint randomly missing from findPathsFromQueries
+		Cause: range used len - 1 causing the loop to end 1 early
+
+	post bug testing for waypoint pathing:
+	- Origin: (19, 6) End: (16, 11)
+		Result: [(19, 6), (19, 7), (19, 8), (19, 9), (16, 10), (16, 11)] => expected
+	- Origin: (5, 8) End: (16, 11)
+		Result: [(5, 8), (16, 11)] => expected
+	- Origin: (16, 11) End: (5, 8)
+		Result: [] (Unreachable) => expected
+	- Origin: (94, 1) End: (5, 8)
+		Result: [] (Unreachable) => expected
+	- Origin: (5, 8) End: (94, 1)
+		Result: [] (Unreachable) => expected
+
+final pathing notes:
+	- None keeps getting passed to getHeuristic resulting in a typeError and referencing nodeMap coordinates results in an index out of range error
+		Cause: pathfind was using the non-stripped graph causing the check for getHeuristic to find no nodes, hence causing an error while nodeMap was using the precompiledGraph instead of the whole map
+	- Paths were incomplete from startNode to nearestStartWaypoint and from nearestEndWaypoint to endNode
+		Cause: the inbetween pathing only used waypointPath and excluded the paths from the startNode to the nearestStartWaypoint and from the nearestEndWaypoint to the endNode
+		Fix: added explicit additions for these 2 points
+
+	- testGraph ID 1 errored through splitAt in connectAdjacentWaypoints since splitAt only appended the index as a waypoint, not the corners.
+		Fix: add a reference to group using the index. (Also added an ignoreNext variable so waypoints on the same y coordinate which didn't connect weren't seen as connected)
+	- testGraph ID 1 errored through deleting the floor
+		Cause: 
+			1. direction "l" has no effect => False
+			2. findLowerNodes is going 1 too low sometimes
+			Overall - jumpOffEdge never checked if a floor was hit to end the traversal
+			Fix: Added check for hitFloor and added an iteration through topNodes to remove any floorNodes
+
+Deployment:
+	- getLowerNodes isn't getting lower nodes properly.
+		- Potential cause: getLowerNodes first checks if the currentNode is already inside topNodes or foundNodes. This might be skipping every node instead of only duplicates.
+		- Actual cause: PYTHON KEPT PASSING CURRENTNODE AS REFERENCE FFS. Therefore, everytime currentNode was modified the *entirety* of foundNodes updated to reflect it, which explains why some lower nodes were being marked while others were being skipped.
+	- connectAdjacentWaypoints connected waypoints through walls
+		- Cause unknown, however I fixed it by implementing a new function "attemptGroundTraversal" which tries to connect 2 waypoints via only ground traversal. If any wall or empty ground is encountered, the function fails and returns false (i.e. the waypoints SHOULD NOT be connected).
+
+"Final" Notes:
+	- This pathing algorithm IS NOT PERFECT. When testing its performance in tight areas there were a few instances where the precompile algorithm travelled a node or 2 too high, meaning some nodes marked as traversable aren't traversable.
+	This shouldn't be an issue since the player isn't going to occupy these nodes for very long anyway, therefore I've decided to ignore these errors.
+	NEWSFLASH: IT WASN'T A GOOD IDEA TO IGNORE THESE ERRORS
+	Cause of travelling too high: Waypoint through wall. (((27, 33), "->", (34, 30)) in waypoints => True)
+	This explains the double back the algorithm did AND the fact that the traversal seemingly ignored the fact that it was meant to stick to the ground (which is weird since the correct waypoint path would've stuck to the ground)
+	The only way the path wouldn't stick to the ground is if the path was generated from the segmented pathing section (i.e. from the bugged waypoint through the wall) since that pathing ignores gravity.
+	- Cause: the check in getParabolaPoints for if the point was a wall or not didn't include the origin's position in its calculation (i.e. A point of (22, 33) would've been considered as if it was (1, 0) since the point wasn't offset by the origin)
+	- Fix: immediately offset coord in getParabolaPoints by the origin
+
+Actual final notes now:
+	- It's probably not perfect, but it's pretty close!
+	- A 91ms traversal time is pretty good!
+	- Plus from what I've tested it's quite accurate!

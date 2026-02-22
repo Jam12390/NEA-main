@@ -1,0 +1,227 @@
+IMPORT pygame
+
+class PhysicsObject inherits pygame.sprite.Sprite
+    protected _size: pygame.math.Vector2
+    public gameObj: pygame.image
+    public rect: pygame.rect
+    public simulated: bool
+    public tag: string
+    protected _mass: float
+    protected _xForces: Map<string, float> #all physics attributes initialised as protected since they all require data validation
+    protected _yForces: Map<string, float>
+    protected _resultantForce: pygame.math.Vector2
+    protected _velocity: pygame.math.Vector2
+    protected _velocityCap: pygame.math.Vector2
+    protected _acceleration: pygame.math.Vector2
+    public blockedMotion: List<string>
+
+    public procedure recalculateResultantForce()
+        resXForce = 0
+        resYForce = 0
+        for force in _xForces: #sum of horizontal forces
+            resXForce += force.value
+        endfor
+        for force in _yForces: #sum of vertical forces
+            resYForce += force.value
+        endfor
+        _resultantForce = pygame.math.Vector2(resXForce, resYForce) #store as vector2 (easier for later operations)
+    endprocedure
+    
+    public function getAcceleration(accelerationMultiplier: float = 1.0) #provides an option to artificially increase acceleration (and therefore velocity, etc.) to Entity and Player
+        return (_resultantForce/_mass) * accelerationMultiplier #a = F/m
+    endfunction
+
+    public function getVelocity()
+        initialVelocity = _velocity
+        array velocityChanged[2]
+        xVelocity = _velocity.x + _acceleration.x*(1/FPS)
+        if xVelocity > _velocityCap.x: #clamp x _velocity to _velocityCap.x
+            xVelocity = _velocityCap.x
+        elif xVelocity < _velocityCap.x*-1:
+            xVelocity = _velocityCap.x*-1
+        endif
+        yVelocity = _velocity.y + _acceleration.y*(1/FPS)
+        if xVelocity > _velocityCap.y: #clamp y _velocity to _velocityCap.y
+            yVelocity = _velocityCap.y
+        elif xVelocity < _velocityCap.y*-1:
+            yVelocity = _velocityCap.y*-1
+        endif
+        if xVelocity == initialVelocity.x: #check if either velocity has changed for displaceObject() equation
+            velocityChanged[0] = true
+        else:
+            velocityChanged[0] = false
+        endif
+        if yVelocity == initialVelocity.y:
+            velocityChanged[1] = true
+        else:
+            velocityChanged[1] = false
+        endif
+        if (initialVelocity.x < 0 AND xVelocity >= 0) OR (initialVelocity.x > 0 AND xVelocity <= 0): #check if the object's weapon needs to change position
+            directionChanged = true
+        else:
+            directionChanged = false
+        endif
+        return velocityChanged, initialVelocity, pygame.math.Vector2(xVelocity, yVelocity), directionChanged
+    endfunction
+
+    public function getVelocityValue() #getter for velocity
+        return _velocity
+    endfunction
+
+    public function getMass() #getter for mass
+        return _mass
+    endfunction
+
+    public function displaceObject(
+        velocityChanged: List<bool>,
+        initialVelocity: pygame.math.Vector2,
+        finalVelocity: pygame.math.Vector2,
+        directionChanged: bool,
+        collidableObjects: List<Object>
+    )
+        if velocityChanged[0]: #if the velocity has changed, use s = (v^2 - u^2)/(2*a)
+            xDisplacement = (finalVelocity.x**2 - initialVelocity.x**2)/(_acceleration.x*2)
+        else:
+            xDisplacement = _velocity.x*(1/FPS)
+        endif
+        if velocityChanged[1]:
+            yDisplacement = (finalVelocity.y**2 - initialVelocity.y**2)/(_acceleration.y*2)
+        else:
+            yDisplacement = _velocity.y*(1/FPS)
+        endif
+
+        renderCollisions(collidableObjects=collidableObjects, velocity=[finalVelocity.x, finalVelocity.y], displacement=pygame.math.Vector2(xDisplacement, yDisplacement)) #update position
+
+        if "l" in blockedMotion OR "r" in blockedMotion:
+            xDisplacement = 0 #don't move the object
+            finalVelocity.x = 0 #assume velocity is in the same direction and therefore set it to 0
+        endif
+        if "d" in blockedMotion OR "u" in blockedMotion:
+            yDisplacement = 0
+            finalVelocity.y = 0
+        endif
+        _velocity = finalVelocity #update velocity
+        return pygame.math.Vector2(xDisplacement, yDisplacement) #for use in updating weapon position
+    endfunction
+
+    public procedure renderCollisions(collidableObjects: List<Object>, velocity: array[2], displacement: pygame.math.Vector2):
+        blockedMotion = []
+        collidingDirections = []
+
+        newRectx = rect
+        newRectx.center = (newRectx.center[0] + displacement.x, newRectx.center[1])
+
+        newRecty = rect
+        newRecty.center = (newRecty.center[0], newRectx.center[1] + displacement.y)
+
+        for collidable in collidableObjects:
+            if collidable.tag == "wall" AND collidable.simulated: #thinking ahead for when objects are de-rendered to improve performance
+                if pygame.Rect.colliderect(collidable, newRectx):
+                    if velocity[0] >= 0:
+                        collidingDirections.append("r")
+                        rect.center = (collidable.left, rect.center[1])
+                    else:
+                        collidingDirections.append("l")
+                        rect.center = (collidable.right, rect.center[1])
+                    endif
+                endif
+                if pygame.Rect.colliderect(collidable, newRecty):
+                    if velocity[1] >= 0:
+                        collidingDirections.append("u")
+                        rect.center = (rect.center[0], collidable.bottom)
+                    else:
+                        collidingDirections.append("d")
+                        rect.center = (rect.center[0], collidable.top)
+                    endif
+                endif
+            endif
+        endfor
+
+        for direction in collidingDirections:
+            if NOT direction in blockedMotion:
+                blockedMotion.append(direction)
+            endif
+        endfor
+    endprocedure
+
+    public procedure addForce(axis: char, direction: string, ref: string, magnitude: float)
+        if direction == "l" OR direction == "down": #dirEffect is used to ensure magnitude follows the convention (-) = left or down, (+) = up or right
+            dirEffect = -1
+        else:
+            dirEffect = 1
+        endif
+        if axis == "x":
+            if _xForces[ref] != null: #presence check for the force reference
+                _xForces[ref] += dirEffect*magnitude #if it exists, add it to the existing value
+            else:
+                _xForces.add(ref, dirEffect*magnitude) #else, add it to the dictionary
+            endif
+        else:
+            if _yForces[ref] != null:
+                _yForces[ref] += dirEffect*magnitude
+            else:
+                _yForces.add(ref, dirEffect*magnitude)
+            endif
+        endif
+    endprocedure
+
+    public procedure removeForce(axis: char, ref: string)
+        if axis == "x": #check axis (which dictionary should we access)
+            if _xForces.contains(ref): #presence check for reference
+                _xForces.remove(ref) #if it exists, remove it. else do nothing
+            endif
+        else:
+            if _yForces.contains(ref):
+                _yForces.remove(ref)
+            endif
+        endif
+    endprocedure
+
+    public function containsForce(axis: char, ref: string):
+        if axis == "x":
+            return _xForces.contains(ref)
+        else:
+            return _yForces.contains(ref)
+        endif
+    endprocedure
+
+    public procedure update(collidableObjects: List<Object>)
+        if simulated:
+            recalculateResultantForce() #methods are called in dependency order i.e. ResForce is required for getAcceleration() which is required for getVelocity(), etc.
+            _acceleration = getAcceleration()
+            velocityChanged, initialVelocity, finalVelocity, directionChanged = getVelocity()
+            displaceObject(velocityChanged=velocityChanged, initialVelocity=initialVelocity, finalVelocity=finalVelocity, directionChanged=directionChanged, collidableObjects=collidableObjects)
+
+            rect.clamp_ip(pygame.display.get_surface().get_rect())
+            screen.blit(gameObj, rect)
+    endprocedure
+
+    public procedure killSelf() #any deletion logic goes here
+        kill()
+    endprocedure
+
+    public procedure new(
+        pSize: pygame.math.Vector2,
+        spritePath: string,
+        pTag: string = "None",
+        pMass: float,
+        startingPosition: pygame.math.Vector2,
+        startingVelocity: pygame.math.Vector2 = pygame.math.Vector2(0,0),
+        pVelocityCap: pygame.math.Vector2
+    )
+        size = pSize
+        gameObj = pygame.transform.smoothscale(pygame.image.load(spritePath), (pSize.x, pSize.y))
+        rect = pygame.get_rect(gameObj)
+        rect.center = (startingPosition.x, startingPosition.y)
+        simulated = true
+        tag = pTag
+        _mass = pMass
+        _xForces = {}
+        _yForces = {"gravity": pMass*9.81}
+        _resultantForce = pygame.math.Vector2(0,0)
+        _velocity = startingVelocity
+        _velocityCap = pVelocityCap
+        _acceleration = pygame.math.Vector2(0,0)
+        blockedMotion = []
+    endprocedure
+endclass

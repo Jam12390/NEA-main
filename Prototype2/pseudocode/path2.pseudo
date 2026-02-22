@@ -1,0 +1,155 @@
+//EXPANDING PATH TO CONNECTED NODES
+
+def getAdjacentNodes(nodeMap, nodeIndex, limits):
+    adj = [
+        (nodeIndex[0] - 1, nodeIndex[1]),
+        (nodeIndex[0] + 1, nodeIndex[1]),
+        (nodeIndex[0], nodeIndex[1] - 1),
+        (nodeIndex[0], nodeIndex[1] + 1)
+    ]
+    indexesToRemove = []
+
+    for index in range(0, 4):
+        if limits["x"][0] <= adj[index][0] AND adj[index][0] <= limits["x"][1]:
+            inXRange = true
+        else:
+            inXRange = false
+        if limits["y"][0] <= adj[index][1] AND adj[index][1] <= limits["y"][1]:
+            inYRange = true
+        else:
+            inYRange = false
+
+        if nodeMap[adj[index][1]][adj[index][0]] == "#" OR NOT inXRange OR NOT inYRange:
+            indexesToRemove.append(index)
+    
+    for index in indexesToRemove:
+        adj.remove(index)
+    
+    return adj
+    
+
+def shortenPath(
+    currentTable,
+    startingNode,
+    nodeSeparation
+    ):
+    for node in currentTable[startingNode]["nextNodes"]:
+        currentTable[node]["shortestDistance"] = currentTable[startingNode]["shortestDistance"] + nodeSeparation
+        currentTable = shortenPath(currentTable, node, nodeSeparation)
+    return currentTable
+
+////////////////////////
+//GENERAL PATHING SUBROUTINE
+////////////////////////
+
+def path(
+    nodeMap,
+    originNodeOffset,
+    limits,
+    startNode, //in index form i.e. [y, x] where the origin is the top left. (cannot be a tuple due to tuples being static)
+    endNode,
+    nodeSeparation,
+    excludedNodes=[],
+    preVerified=false,
+    savedState=null
+    ):
+
+    currentTable = {
+        startNode: {
+            "shortestDistance": 0,
+            "heuristic": math.sqrt((endNode[0]-startNode[0])**2 + (endNode[1]-startNode[1]**2)),
+            "nextNodes": [],
+            "previousNode": NA,
+            "visited": false
+        },
+        endNode: {
+            "shortestDistance": math.inf,
+            "heuristic": 0,
+            "nextNodes": [],
+            "previousNode": null,
+            "visited": false
+        }
+    }
+    
+    pathFound = false
+
+    while NOT pathFound:
+        currentNode = [null, math.inf] //[node, distance]
+        for node in currentTable.keys:
+            if node["shortestDistance"] + node["heuristic"] < currentNode AND NOT (node["visited"] OR node in excludedNodes):
+                currentNode = [node, node["shortestDistance"] + node["heuristic"]]
+        
+        adjacentNodes = getAdjacentNodes(nodeMap, currentNode[0], limits) //TODO: continue here
+        for node in adjacentNodes:
+            if NOT node in currentTable.keys:
+                currentTable[node] = {
+                    "shortestDistance": math.inf,
+                    "heuristic": math.sqrt(
+                        (endNode[0]-originNodeOffset[0] + (node[0] * nodeSeparation))**2
+                        +
+                        (endNode[1]-originNodeOffset[1] + (node[1] * nodeSeparation))**2
+                    ),
+                    "nextNodes": [],
+                    "previousNode": null,
+                    "visited": false
+                }
+            newDistance = currentTable[currentNode[0]]["shortestDistance"] + nodeSeparation
+            if newDistance < currentTable[node]["shortestDistance"]:
+                currentTable[node]["shortestDistance"] = newDistance
+                currentTable[node]["previousNode"] = currentNode
+                currentTable[currentNode[0]]["nextNodes"].append(node)
+                currentTable = shortenPath(currentTable, node, nodeSeparation)
+
+        currentTable[currentNode[0]]["visited"] = true
+
+        if currentNode[0] == endNode:
+            pathFound = true
+            finalPath = pathBack(currentTable, endNode)
+
+///////////////////////////////
+//GETTING FINAL PATH
+///////////////////////////////
+
+class Stack():
+    private height
+    private contents
+    private head
+
+    public procedure new(pHeight):
+        height = pHeight
+        contents = array[height]
+        head = 0
+    endprocedure
+
+    public procedure push(data):
+        if height != "NA" OR height = "unlimited":
+            if head < height:
+                contents[head] = data
+            else:
+                pass //would be raise OverflowError in python
+    endprocedure
+
+    public function pop():
+        if head >= 0:
+            temp = contents[head]
+            contents.remove(head)
+            head -= 1
+            return temp
+        else:
+            return null //would raise a stack underflow error here
+    endfunction
+
+    public function isEmpty():
+        return head == 0
+endclass
+
+def pathBack(currentTable, startNode):
+    currentNode = endNode
+    pathStack = new Stack("unlimited")
+    path = []
+    while currentTable[currentNode]["previousNode"] != null:
+        pathStack.push(currentNode)
+        currentNode = currentTable[currentNode]["previousNode"]
+    while NOT pathStack.isEmpty():
+        path.append(pathStack.pop())
+    return path
