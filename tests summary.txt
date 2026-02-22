@@ -286,3 +286,4 @@ camera - works
 chase across map => yes
 
 
+proto3

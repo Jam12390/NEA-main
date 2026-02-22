@@ -2,6 +2,7 @@ import pygame
 from Entity import Entity
 from OtherClasses import Weapon
 from dictionaries import allItems
+import transfer.pathing as Pathing
 
 hardVCap = (-125, 125)
 
@@ -198,15 +199,78 @@ class Enemy(Entity):
             startingPosition,
             pVelocityCap,
             startingVelocity = ...,
-            pAggroRange = 5,
+            pAggroRange = 300,
             pFacing = "r",
             weaponID = 0,
-            pTag = "Enemy"):
-        super().__init__(FPS, jumpForce, maxHP, defense, speed, pAttackCooldown, pSize, spritePath, pMass, startingPosition, pVelocityCap, startingVelocity, pTag)
+            pTag = "Enemy",
+            pIgnoreYFriction=False
+        ):
+        super().__init__(FPS, jumpForce, maxHP, defense, speed, pAttackCooldown, pSize, spritePath, pMass, startingPosition, pVelocityCap, startingVelocity, pTag, pIgnoreYFriction)
         self.aggroRange = pAggroRange
+        self.aggrod = False
+        self.seen = False
         self.weapon = Weapon(FPS=FPS, pID=weaponID, startingPosition=pygame.Vector2(round(self.rect.centerx), round(self.rect.centery)))
-        
+        self.framesSinceLastPath = 0
+        self.framesSinceLastSight = 0
+
         self.currentNode = (
-            ((self.absoluteCoordinate.x) // 75),
-            (self.absoluteCoordinate.y) // 75 + 6,
+            int((self.absoluteCoordinate.x) // 75),
+            int((self.absoluteCoordinate.y) // 75 + 6),
         )
+
+        self.sightRect = pygame.Rect(self.rect.centerx, self.rect.centery, pAggroRange * 2, 10)
+
+        self.facing = pFacing
+
+    def update(
+            self,
+            collidableObjects,
+            precompiledData,
+            nodeMap,
+            nodeSep,
+            pathingTo,
+            playerRect
+        ):
+        self.framesSinceLastPath += 1
+        self.simulated = self.currentNode[1] in range(int(pathingTo[1] - 10), int(pathingTo[1] + 10))
+        if self.simulated:
+            self.seen = pygame.Rect.colliderect(self.sightRect, playerRect)
+
+            if not self.seen:
+                self.framesSinceLastSight += 1
+            else:
+                self.aggrod = True
+                self.framesSinceLastSight = 0
+            if self.framesSinceLastSight > 60:
+                self.aggrod = False
+
+            if self.framesSinceLastPath > 0:#
+                self.path(
+                    pathingTo=pathingTo,
+                    precompiledData=precompiledData,
+                    nodeMap=nodeMap,
+                    nodeSep=nodeSep
+                )
+                self.framesSinceLastPath = 0
+            
+            self.shouldPath = self.aggrod
+            
+            self._resultantForce = self.recalculateResultantForce(forceMult=self._speed, includedForces=[])
+            self._acceleration = self.getAcceleration()
+            self.getVelocity()
+            
+            displacement = self.displaceObject(collidableObjects=collidableObjects)
+
+            if -2.5 < displacement.x and displacement.x < 2.5:
+                displacement.x = 0
+            if -0.25 < displacement.y and displacement.y < 0.25:
+                displacement.y = 0
+
+            if self.currentNode == self.previousPathCoord:
+                self.framesSinceLastNode += 1
+
+            self.rect.center += displacement
+            self.absoluteCoordinate += displacement
+        else:
+            self.shouldPath = False
+            self.currentPath = []

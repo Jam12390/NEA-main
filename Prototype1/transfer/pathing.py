@@ -133,7 +133,7 @@ def cascadeUpdate(nodes: list[TopDownNode], startNode: TopDownNode):
     return nodes
 
 
-def getTopDownPath(graph, start, end, tolerance: int, directionalGraph: Optional[list[tuple[tuple[int, int], str, tuple[int, int]]]] = None, preferDirection: Optional[str] = None, debug = None) -> list[tuple[int, int]]: #directionalGraph => [((y, x), "->", (y2, x2))] | None
+def getTopDownPath(graph, start, end, tolerance: int, directionalGraph: Optional[list[tuple[tuple[int, int], str, tuple[int, int]]]] = None, returnDestination = False, preferDirection: Optional[str] = None, debug = None) -> list[tuple[int, int]]: #directionalGraph => [((y, x), "->", (y2, x2))] | None
     if directionalGraph != None:
         useDirections = True
     else:
@@ -189,6 +189,10 @@ def getTopDownPath(graph, start, end, tolerance: int, directionalGraph: Optional
     while currentNode.coord != start:
         stack.push(currentNode.coord)
         currentNode = nodes[getNodeFromCoord(nodes=nodes, coord=currentNode.previousNode.coord)] #I KNOW THIS IS AN ERROR, IT WONT LET ME SPECIFY THE TYPE TO REMOVE THE ERROR DDD:
+    
+    #if returnDestination:
+    #    return nodes[len(nodes) - 1] if len(nodes) > 1 else None
+    
     while not stack.isEmpty():
         path.append(stack.pop())
     

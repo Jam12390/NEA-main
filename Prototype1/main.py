@@ -1,6 +1,6 @@
 import pygame
 import sys
-from EntitySubclasses import Player
+from EntitySubclasses import Player, Enemy
 import Entity
 from OtherClasses import WallObj, Item, ItemUIWindow
 from button import Button
@@ -41,7 +41,7 @@ mapResponse = mapLoading.loadMapData(
 pathingOffset = pygame.Vector2(screenWidth/2, screenHeight/2)
 
 enemyData = {
-    "jumpForce": 120,
+    "jumpForce": 130,
     "maxSpeed": (100, 50)
 }
 
@@ -92,7 +92,8 @@ player.absoluteCoordinate.x -= screenWidth/1.25
 #)
 
 #debug = pygame.sprite.Group()
-debug = Entity.Entity(
+debug = Enemy(
+    screen=screen,
     FPS=FPS,
     jumpForce=enemyData["jumpForce"],
     maxHP=10,
@@ -108,6 +109,22 @@ debug = Entity.Entity(
     pSize=pygame.Vector2(50, 25),
     pIgnoreYFriction=True
 )
+#debug = Entity.Entity(
+#    FPS=FPS,
+#    jumpForce=enemyData["jumpForce"],
+#    maxHP=10,
+#    defense=10,
+#    speed=10,
+#    pAttackCooldown=10,
+#    spritePath="Sprites/DefaultSprite.png",
+#    pTag="",
+#    pMass=5,
+#    startingPosition=pygame.Vector2(mapResponse[3][0]),#(800, 400),
+#    pVelocityCap=pygame.Vector2(enemyData["maxSpeed"]),
+#    startingVelocity=pygame.Vector2(50, 0),
+#    pSize=pygame.Vector2(50, 25),
+#    pIgnoreYFriction=True
+#)
 
 debug.absoluteCoordinate.y -= mapResponse[2].y
 debug.absoluteCoordinate.x -= screenWidth/2
@@ -263,7 +280,8 @@ def mainloop():
                 precompiledData=precompiledGraph,
                 nodeMap=loadedMap,
                 nodeSep=30,
-                pathingTo=player.currentNode
+                pathingTo=player.currentNode,
+                playerRect=player.rect
             )
             #if "l" in player.blockedMotion and not "l" in previousBlockedMotion:
             #    playerMoved.x = -1
@@ -298,6 +316,7 @@ def mainloop():
             
             debug.rect.centerx -= playerMoved.x
             debug.rect.centery -= playerMoved.y
+            debug.sightRect.center = debug.rect.center
                 #path = pathing.main(
                 #        start=(16, 31),
                 #        end=player.currentNode,
@@ -378,6 +397,7 @@ def redraw(): #it's important to note that redraw() DOES NOT update() any of the
     
     items.draw(screen)
     screen.blit(debug.image, debug.rect)
+    #pygame.draw.rect(screen, [255, 255, 255], debug.sightRect)
     #print(debug[0].rect.center)
 
 def inventory():

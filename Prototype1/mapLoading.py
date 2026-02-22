@@ -13,7 +13,7 @@ def loadMapData(
         tileSize: int,
         baseScreenDimensions: tuple[int, int],
         playerHeight: int,
-        tileData: dict[int, tuple[str, float]] = {0: ("Sprites/DefaultSprite.png", (0.5, 0.5))}, # ID: (spritePath, frictionCoef => (x, y))
+        tileData: dict[int, tuple[str, float]] = {0: ("Sprites/DefaultSprite.png", (0.75, 0.5))}, # ID: (spritePath, frictionCoef => (x, y))
 ) -> tuple[pygame.sprite.Group, tuple[int, int]]:
     mapData = pygame.sprite.Group()
     enemyStartPositions = []
