@@ -577,7 +577,7 @@ def shortenPath(path, nodeMap):
     while index + 2 < len(path):
         xDiff = abs(path[index + 2][1] - path[index][1])
         yDiff = abs(path[index + 2][0] - path[index][0])
-        if xDiff == 1 and yDiff == 1 and nodeMap[path[index][0] - 1][path[index][1]] != "#":# and nodeMap[path[index][0]][path[index][1] + 1] != "#" and nodeMap[path[index][0]][path[index][1] - 1] != "#":
+        if xDiff >= 1 and yDiff >= 1:# and nodeMap[path[index][0] - 1][path[index][1]] != "#":# and nodeMap[path[index][0]][path[index][1] + 1] != "#" and nodeMap[path[index][0]][path[index][1] - 1] != "#":
             path.pop(index + 1)
         index += 1
     return path
@@ -611,7 +611,7 @@ def main(
         nodeMap=nodeMap,
         start=end
     )
-    print(f"end - {end}")
+    #print(f"end - {end}")
     end = precompile.getLowerNodes(
         topNodes=[
             precompile.Point(
@@ -640,10 +640,10 @@ def main(
 
     path = shortenPath(
         path=path,
-        nodeMap=testGraph
+        nodeMap=nodeMap
     )
 
-    #return path
+    return path
 
     for x in path:
         testGraph[x[0]][x[1]] = "x"
@@ -669,37 +669,37 @@ def main(
 #]
 #
 
-testGraph = precompile.loadMap(fileName="Prototype1/transfer/Maps/testMapMove6.csv")
-
-gravityAccel = 9.81 * 15
-nodeSep = 15
-
-enemyData = {
-    "jumpForce": 100,
-    "maxSpeed": (100, 50)
-}
-
-response = precompile.precompileGraph(
-    nodeMap=testGraph,
-    nodeSep=nodeSep,
-    gravity=gravityAccel,
-    enemyData=enemyData,
-    origin=(16, 0)
-)
-
-debug = True
-t = time.time()
-
-if debug:
-    main(
-        start=(16, 6),
-        end=(12, 18),
-        precompiledData=response,
-        nodeMap=testGraph,
-        nodeSep=nodeSep,
-        jumpForce=enemyData["jumpForce"],
-        maxXSpeed=enemyData["maxSpeed"][1],
-        gravity=gravityAccel
-    )
-e = time.time()
-print(e - t)
+#testGraph = precompile.loadMap(fileName="Prototype1/transfer/Maps/testMapMove6.csv")
+#
+#gravityAccel = 9.81 * 15
+#nodeSep = 15
+#
+#enemyData = {
+#    "jumpForce": 100,
+#    "maxSpeed": (100, 50)
+#}
+#
+#response = precompile.precompileGraph(
+#    nodeMap=testGraph,
+#    nodeSep=nodeSep,
+#    gravity=gravityAccel,
+#    enemyData=enemyData,
+#    origin=(16, 0)
+#)
+#
+#debug = True
+#t = time.time()
+#
+#if debug:
+#    main(
+#        start=(16, 6),
+#        end=(12, 18),
+#        precompiledData=response,
+#        nodeMap=testGraph,
+#        nodeSep=nodeSep,
+#        jumpForce=enemyData["jumpForce"],
+#        maxXSpeed=enemyData["maxSpeed"][1],
+#        gravity=gravityAccel
+#    )
+#e = time.time()
+#print(e - t)

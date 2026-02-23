@@ -1001,7 +1001,7 @@ def outputTestGraph(fileName: str) -> None:
 mapName = "Prototype1/transfer/Maps/testMapMove6.csv"
 origin = (16, 0)
 #
-main(map=mapName, origin=origin)
+#main(map=mapName, origin=origin)
 #outputTestGraph(fileName=mapName)
 #e = time.time()
 #print(e - t)

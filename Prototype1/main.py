@@ -23,7 +23,7 @@ FPS = 60
 
 #player = pygame.sprite.GroupSingle()
 
-mapName = "testMapMove6"
+mapName = "testMapMove8"
 mapPath = f"Prototype1/transfer/Maps/{mapName}.csv"
 
 TILESIZE = 76
@@ -33,7 +33,7 @@ mapResponse = mapLoading.loadMapData(
     mapName=mapName,
     STARTKEY=5,
     ITEMKEY=6,
-    ENEMYKEY=6,
+    ENEMYKEY=2,
     tileSize=TILESIZE,
     baseScreenDimensions=(screenWidth, screenHeight),
     playerHeight=25
@@ -42,7 +42,7 @@ pathingOffset = pygame.Vector2(screenWidth/2, screenHeight/2)
 
 enemyData = {
     "jumpForce": 130,
-    "maxSpeed": (100, 50)
+    "maxSpeed": (50, 50)
 }
 
 loadedMap = precompile.loadMap(fileName=mapPath)
@@ -67,13 +67,13 @@ player = Player(
     jumpForce=150, #pixels/second
     maxHP=100,
     defense=5,
-    speed=5,
+    speed=1,
     pAttackCooldown=0.75,
     pSize=PLAYERSIZE,
     spritePath="Sprites/DefaultSprite.png", #path to the player's sprite goes here
     pTag="player",
     pMass=3,
-    startingPosition=mapResponse[1],#pygame.math.Vector2(screenWidth/2, screenHeight/2),
+    startingPosition=mapResponse[2],#pygame.math.Vector2(screenWidth/2, screenHeight/2),
     startingVelocity=pygame.math.Vector2(0, 0),
     pVelocityCap=pygame.math.Vector2(100, 100),
     startingWeaponID=0
@@ -92,23 +92,42 @@ player.absoluteCoordinate.x -= screenWidth/1.25
 #)
 
 #debug = pygame.sprite.Group()
-debug = Enemy(
-    screen=screen,
-    FPS=FPS,
-    jumpForce=enemyData["jumpForce"],
-    maxHP=10,
-    defense=10,
-    speed=10,
-    pAttackCooldown=10,
-    spritePath="Sprites/DefaultSprite.png",
-    pTag="",
-    pMass=5,
-    startingPosition=pygame.Vector2(mapResponse[3][0]),#(800, 400),
-    pVelocityCap=pygame.Vector2(enemyData["maxSpeed"]),
-    startingVelocity=pygame.Vector2(50, 0),
-    pSize=pygame.Vector2(50, 25),
-    pIgnoreYFriction=True
+#debug = Enemy(
+#    FPS=FPS,
+#    jumpForce=enemyData["jumpForce"],
+#    maxHP=10,
+#    defense=10,
+#    speed=10,
+#    pAttackCooldown=10,
+#    spritePath="Sprites/DefaultSprite.png",
+#    pTag="",
+#    pMass=5,
+#    startingPosition=pygame.Vector2(mapResponse[3][0]),#(800, 400),
+#    pVelocityCap=pygame.Vector2(enemyData["maxSpeed"]),
+#    startingVelocity=pygame.Vector2(50, 0),
+#    pSize=pygame.Vector2(50, 25),
+#    pIgnoreYFriction=True
+#)
+debug = pygame.sprite.Group()
+for enemyPos in mapResponse[4]:
+    debug.add(
+        Enemy(
+        FPS=FPS,
+        jumpForce=enemyData["jumpForce"],
+        maxHP=10,
+        defense=10,
+        speed=1,
+        pAttackCooldown=10,
+        spritePath="Sprites/DefaultSprite.png",
+        pTag="",
+        pMass=5,
+        startingPosition=pygame.Vector2(enemyPos),#(800, 400),
+        pVelocityCap=pygame.Vector2(enemyData["maxSpeed"]),
+        startingVelocity=pygame.Vector2(50, 0),
+        pSize=pygame.Vector2(50, 25),
+        pIgnoreYFriction=True
 )
+    )
 #debug = Entity.Entity(
 #    FPS=FPS,
 #    jumpForce=enemyData["jumpForce"],
@@ -126,10 +145,13 @@ debug = Enemy(
 #    pIgnoreYFriction=True
 #)
 
-debug.absoluteCoordinate.y -= mapResponse[2].y
-debug.absoluteCoordinate.x -= screenWidth/2
+for x in debug:
+    x.absoluteCoordinate.y -= mapResponse[3].y
+    x.absoluteCoordinate.x -= screenWidth/2
 
-items = pygame.sprite.Group()
+items = mapResponse[1]
+#for x in items:
+#    x.rect.centerx += screenWidth/2
 #items.add(
 #    Item(
 #        pID=0,
@@ -192,15 +214,12 @@ def mainloop():
                     player.wallJump()
                 
                 if event.key == pygame.K_p:
-                    debug.shouldPath = True
-                    pass
+                    for x in items:
+                        print(x.UIWindow.rect.center)
                 if event.key == pygame.K_o:
                     pass
-                if event.key == pygame.K_e:
-                    print(debug.absoluteCoordinate)
-                    print(debug.currentNode)
-                if event.key == pygame.K_r:
-                    debug.paused = not debug.paused
+                #if event.key == pygame.K_r:
+                #    debug.paused = not debug.paused
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not player.weapon.currentlyAttacking:
                     player.weapon.attack(parent=player)
@@ -257,7 +276,7 @@ def mainloop():
 
             #update all objects (this includes collision detection)
             playerMoved = player.update(collidableObjects=[walls, items])
-            if -(player._velocityCap.x / 25) < playerMoved.x and playerMoved.x < player._velocityCap.x / 25:
+            if -(player._velocityCap.x / 50) < playerMoved.x and playerMoved.x < player._velocityCap.x / 20:
                 playerMoved.x = 0
             if -0.25 < playerMoved.y and playerMoved.y < 0.25:
                 playerMoved.y = 0
@@ -313,10 +332,20 @@ def mainloop():
             for item in items:
                 item.rect.centerx -= playerMoved.x
                 item.rect.centery -= playerMoved.y
+            for enemy in debug:
+                enemy.rect.centerx -= playerMoved.x
+                enemy.rect.centery -= playerMoved.y
+                enemy.sightRect.center = enemy.rect.center
+                #enemy.currentNode = (
+                #    int((enemy.absoluteCoordinate.y) // 75), #(y, x)
+                #    int(((enemy.absoluteCoordinate.x) // 75))
+                #)
             
-            debug.rect.centerx -= playerMoved.x
-            debug.rect.centery -= playerMoved.y
-            debug.sightRect.center = debug.rect.center
+            #debug.rect.centerx -= playerMoved.x
+            #debug.rect.centery -= playerMoved.y
+            #debug.sightRect.center = debug.rect.center
+            
+            
                 #path = pathing.main(
                 #        start=(16, 31),
                 #        end=player.currentNode,
@@ -341,7 +370,7 @@ def redraw(): #it's important to note that redraw() DOES NOT update() any of the
     player.rect.center = (screenWidth/2, screenHeight/2)
     player.currentNode = (
         (player.absoluteCoordinate.y) // 75, #(y, x)
-        ((player.absoluteCoordinate.x) // 75)
+        ((player.absoluteCoordinate.x) // 75) + 1
     )
     #print(player.currentNode)
     #print(player.absoluteCoordinate)
@@ -387,16 +416,20 @@ def redraw(): #it's important to note that redraw() DOES NOT update() any of the
     for sprite in walls:
         screen.blit(sprite.image, sprite.rect)
     
-    screen.blit(debug.image, debug.rect)
-    debug.currentNode = (
-        int((debug.absoluteCoordinate.y) // 75), #(y, x)
-        int(((debug.absoluteCoordinate.x) // 75))
-    )
+    #screen.blit(debug.image, debug.rect)
+    #debug.currentNode = (
+    #    int((debug.absoluteCoordinate.y) // 75), #(y, x)
+    #    int(((debug.absoluteCoordinate.x) // 75))
+    #)
         #print(sprite.currentNode)
     walls.draw(screen)
+    debug.draw(screen)
     
-    items.draw(screen)
-    screen.blit(debug.image, debug.rect)
+    for x in items:
+        screen.blit(x.image, x.rect)
+        if x.UIWindow.shown:
+            screen.blit(x.UIWindow.surface, x.UIWindow.rect)
+    #screen.blit(debug.image, debug.rect)
     #pygame.draw.rect(screen, [255, 255, 255], debug.sightRect)
     #print(debug[0].rect.center)
 

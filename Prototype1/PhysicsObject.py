@@ -1,5 +1,10 @@
 import pygame
 import typing
+import transfer.precompile as precompile
+
+mapName = "testMapMove8"
+mapPath = f"Prototype1/transfer/Maps/{mapName}.csv"
+nodeMap = precompile.loadMap(fileName=mapPath)
 
 class PhysicsObject(pygame.sprite.Sprite):
     def __init__(
@@ -37,6 +42,11 @@ class PhysicsObject(pygame.sprite.Sprite):
         self.isPostGroundedFrame = 0
         self.shouldReturnDisplacement = False
         self.ignoreYFriction = pIgnoreYFriction
+
+        self.currentNode = (
+            ((self.absoluteCoordinate.x) // 75),
+            (self.absoluteCoordinate.y) // 75 + 6,
+        )
     
     def recalculateResultantForce(self, forceMult: float = 1, includedForces: list = []):
         resXForce = 0
@@ -54,7 +64,7 @@ class PhysicsObject(pygame.sprite.Sprite):
     def getAcceleration(self):
         return (self._resultantForce / self._mass) #a = F/m
     
-    def getVelocity(self):
+    def getVelocity(self, turnForce=1):
         initialVelocity = self._velocity
 
         overflowReductionRate = 2
@@ -79,6 +89,8 @@ class PhysicsObject(pygame.sprite.Sprite):
             yVelocity = self._velocity.y + self._acceleration.y*(1/self.FPS)
             yVelocity = max(self._velocityCap.y * -1, min(yVelocity, self._velocityCap.y)) #same with yVelocity
         
+        if (self.containsForce(axis="x", ref="UserInputRight") and xVelocity < 0) or (self.containsForce(axis="x", ref="UserInputLeft") and xVelocity > 0):
+            xVelocity /= 2 * turnForce
         self._velocity = pygame.Vector2(xVelocity, yVelocity)
 
     def getVelocityValue(self):
@@ -219,6 +231,7 @@ class PhysicsObject(pygame.sprite.Sprite):
             "u": None,
             "d": None
         }
+        ignoreClamp = False
 
         #if not isPlayer:
             #print("Modified by render")
@@ -383,21 +396,20 @@ class PhysicsObject(pygame.sprite.Sprite):
         if "u" in self.blockedMotion:
             if "roof" in collidingObjects["u"].tags or "wall" in collidingObjects["u"].tags:
                 self._velocity.y = max(0, self._velocity.y)
-        elif "d" in self.blockedMotion:
+        elif "d" in self.blockedMotion and "floor" in collidingObjects["d"].tags:# and nodeMap[int(self.currentNode[0])][int(self.currentNode[1])] == "#":
             self._velocity.y = min(0, self._velocity.y)
         if "l" in self.blockedMotion:
             #if len({"rCorner", "sandwich"} & set(collidingObjects["l"].tags)) == 0 and not "d" in self.blockedMotion:
             if not("rCorner" in collidingObjects["l"].tags or "sandwich" in collidingObjects["l"].tags):
                 self._velocity.x = max(0, self._velocity.x)
-            #if collidingObjects["l"] != None:
-            #    self.absoluteCoordinate.x = collidingObjects["l"].absoluteCoordinate.x + self.size.x // 2 + collidingObjects["l"].rect.width // 2
+            if collidingObjects["l"] != None:
+                self.absoluteCoordinate.x = collidingObjects["l"].absoluteCoordinate.x + self.size.x // 2 + collidingObjects["l"].rect.width // 2 + 89
         elif "r" in self.blockedMotion:
             #if len({"lCorner", "sandwich"} & set(collidingObjects["r"].tags)) == 0 and not "d" in self.blockedMotion:
             if not("lCorner" in collidingObjects["r"].tags or "sandwich" in collidingObjects["r"].tags):
                 self._velocity.x = min(0, self._velocity.x)
             if collidingObjects["r"] != None:
                 self.absoluteCoordinate.x = collidingObjects["r"].absoluteCoordinate.x + self.size.x // 2 + collidingObjects["r"].rect.width // 2
-            
         return totalDiff
 
         #if isPlayer:

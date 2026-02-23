@@ -120,11 +120,12 @@ class Item(pygame.sprite.Sprite):
         ):
         super().__init__()
         self.ID = pID
-        self.tag = "item"
+        self.tags = ["item"]
         self.__replaces = allItems[pID]["replaces"]
-        self.surface = pygame.Surface((175, 175))
+        self.size = pygame.Vector2(76, 76)
+        self.surface = pygame.Surface(self.size)
         self.image = pygame.transform.smoothscale(pygame.image.load(allItems[pID]["imgPath"]), (100, 100))
-        self.surface.blit(self.image, (175//2, 175//2))
+        self.surface.blit(self.image, (self.size.x//2, self.size.y//2))
         self.rect = pygame.Surface.get_rect(self.image)
         self.rect.center = (round(startingPosition.x), round(startingPosition.y))
         self.UIWindow = UIWindow
@@ -133,6 +134,8 @@ class Item(pygame.sprite.Sprite):
         #self.rect.centerx += playerMoved.x
         #self.rect.centery += playerMoved.y
         self.surface.blit(self.image, (175//2, 175//2))
+        self.UIWindow.rect.center = (self.rect.centerx, self.rect.centery - 200)
+        self.UIWindow.update()
 
     def pickup(self, target):
         newData = target.pickupItem(ID=self.ID, replaces=self.__replaces)

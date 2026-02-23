@@ -64,10 +64,6 @@ class Entity(PhysicsObject):
         self.isPathing = False
         self.currentPathEnd = (0, 0) #(x, y)
         #self.currentNode = (0, 0) #(y, x)
-        self.currentNode = (
-            ((self.absoluteCoordinate.x) // 75),
-            (self.absoluteCoordinate.y) // 75 + 6,
-        )
         self.debug = 0
         self.currentPath = []
 
@@ -161,8 +157,8 @@ class Entity(PhysicsObject):
             rePathTolerance=2
         ):
         pathingTo = (int(pathingTo[0]), int(pathingTo[1]))
-        print(self.currentNode)
-        print(self.currentPath)
+        #print(self.currentNode)
+        #print(self.currentPath)
         #print(precompile.getLowerNodes(
         #        topNodes=[precompile.Point(
         #            x=pathingTo[1],
@@ -192,7 +188,6 @@ class Entity(PhysicsObject):
                     maxXSpeed=self._velocityCap.x,
                     gravity=gravity
                 )
-                print(f"Pathing to {pathingTo}")
                 cleanPath = []
                 for x in self.currentPath:
                     if not x in cleanPath:
@@ -221,9 +216,7 @@ class Entity(PhysicsObject):
                 #print(self.currentPath)
                 #self._velocity.x = 0
                 index = self.currentPath.index(self.currentNode)
-                print(self.currentPath)
                 for x in range(0, index + 1):
-                    print("z")
                     self.framesSinceLastNode = 0
                     self.previousPathCoord = self.currentPath[0]
                     self.removeForce(axis="x", ref="xPathing")
@@ -256,7 +249,6 @@ class Entity(PhysicsObject):
                 elif self.framesSinceLastNode > 10:
                     self.addForce(axis="x", direction=xDir, ref="xPathing", magnitude=1000)
                 if self.isGrounded and yNodeDiff > 0:
-                    print("jump")
                     self.jump()
                 self.previousPathCoord = self.currentNode
             except:
@@ -322,5 +314,10 @@ class Entity(PhysicsObject):
 
             self.rect.center += displacement
             self.absoluteCoordinate += displacement
+
+            self.currentNode = (
+                int((self.absoluteCoordinate.y) // 75), #(y, x)
+                int(((self.absoluteCoordinate.x) // 75))
+            )
 
             #self.rect.clamp_ip(pygame.display.get_surface().get_rect())

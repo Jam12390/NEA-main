@@ -287,3 +287,25 @@ chase across map => yes
 
 
 proto3
+
+very few issues
+
+items not loading in the correct position
+playing with numbers fixed it
+
+speed not being modified correctly
+self.modifySpeedCap in Player used speed as a multiplier....
+speed was defaulted to 10........
+fixed that and added a minimum speed in case the player was to hypothetically move too slow to register movement
+
+player is sticking to the wall again
+player is clipping into wall
+already tried offsetting by the difference
+	but i dont think it worked because of clamping?
+	whatever
+
+cause: mistagging walls since they were out of list range (lWall was checking itself so was guaranteed true)
+fix: add range check to lWall and rWall
+
+item UI windows not showing up in the right places
+in item update loop added a line to set the window to the items position each frame (theres little to no performance impact from this. also fuck you for considering a performance impact ITS A UI WINDOW)

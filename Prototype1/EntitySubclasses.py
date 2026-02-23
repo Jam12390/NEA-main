@@ -4,7 +4,8 @@ from OtherClasses import Weapon
 from dictionaries import allItems
 import transfer.pathing as Pathing
 
-hardVCap = (-125, 125)
+hardVCap = pygame.Vector2(200, 200) #(x, y)
+minVCap = pygame.Vector2(75, 50)
 
 class Player(Entity):
     def __init__(
@@ -100,19 +101,32 @@ class Player(Entity):
                 self.modifyStat(effect[0], effect[1], effect[2])
         
         #increase speed cap by a factor of _speed
-        if self._baseVCap[0] * self._speed > self._baseVCap[0]:
-            self._velocityCap.x = self._baseVCap[0] * self._speed
-        else:
-            self._velocityCap.x = self._baseVCap[0]
-        if self._baseVCap[1] * self._speed > self._baseVCap[1]:
-            self._velocityCap.y = self._baseVCap[1] * self._speed
-        else:
-            self._velocityCap.y = self._baseVCap[1]
+        #if self._baseVCap[0] * self._speed > self._baseVCap[0]:
+        #    self._velocityCap.x = self._baseVCap[0] * self._speed
+        #else:
+        #    self._velocityCap.x = self._baseVCap[0]
+        #if self._baseVCap[1] * self._speed > self._baseVCap[1]:
+        #    self._velocityCap.y = self._baseVCap[1] * self._speed
+        #else:
+        #    self._velocityCap.y = self._baseVCap[1]
+
+        self._velocityCap.x = self._baseVCap[0] * self._speed
+        if abs(self._velocityCap.x) > hardVCap.x:
+            self._velocityCap.x = hardVCap.x
+        elif abs(self._velocityCap.x) < minVCap.x:
+            self._velocityCap.x = minVCap.x
+        
+        self._velocityCap.y = self._baseVCap[1] * self._speed
+        if abs(self._velocityCap.y) > hardVCap.y:
+            self._velocityCap.y = hardVCap.y
+        elif abs(self._velocityCap.y) < minVCap.y:
+            self._velocityCap.y = minVCap.y
+
 
         self._baseVCap = self._originalAttributes["baseVCap"]
 
-        self._velocityCap.x = max(hardVCap[0], min(self._velocityCap.x, hardVCap[1]))
-        self._velocityCap.y = max(hardVCap[0], min(self._velocityCap.y, hardVCap[1]))
+        #self._velocityCap.x = max(hardVCap[0], min(self._velocityCap.x, hardVCap[1]))
+        #self._velocityCap.y = max(hardVCap[0], min(self._velocityCap.y, hardVCap[1]))
     
     def crouch(self):
         self.rect.height //= 2 #make player shorter
@@ -160,8 +174,12 @@ class Player(Entity):
                     case "r":
                         self._acceleration.x = max(0, self._acceleration.x)
                 self.ignoreAccelFrames -= 1
-            self.getVelocity()
-            displacement = self.displaceObject(collidableObjects=collidableObjects, isPlayer=True) #playerMoved is irrelevant here => set to (0, 0)
+            self.getVelocity(turnForce=self._speed)
+            
+            displacement = self.displaceObject(collidableObjects=collidableObjects, isPlayer=True)
+            #displacement = displacementResponse[0]
+            #ignoreClamp = displacementResponse[1] #playerMoved is irrelevant here => set to (0, 0)
+            
             #print(displacement)
             #self.rect.center = (round(self.rect.centerx - displacement.x), round(self.rect.centery - displacement.y)) 
 
@@ -241,7 +259,7 @@ class Enemy(Entity):
             else:
                 self.aggrod = True
                 self.framesSinceLastSight = 0
-            if self.framesSinceLastSight > 60:
+            if self.framesSinceLastSight > 180: #3 secs
                 self.aggrod = False
 
             if self.framesSinceLastPath > 0:#
@@ -271,6 +289,11 @@ class Enemy(Entity):
 
             self.rect.center += displacement
             self.absoluteCoordinate += displacement
+
+            self.currentNode = (
+                int((self.absoluteCoordinate.y) // 75), #(y, x)
+                int(((self.absoluteCoordinate.x) // 75))
+            )
         else:
             self.shouldPath = False
             self.currentPath = []
