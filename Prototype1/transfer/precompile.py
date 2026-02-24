@@ -3,7 +3,6 @@ try:
 except:
     import suvat
 import csv
-import time
 
 class Point():
     def __init__(
@@ -188,13 +187,6 @@ def getPointsAcrossCurve(
                 hitHash = True
             t += tStep
 
-
-    #for x in range(numOfPoints + 1): # 1 to numOfPoints inclusive
-    #    points.append(nearestNode(
-    #        absolute=(suvat.s(u=u, g=g, t=abs(t)), maxXSpeed * t),
-    #        nodeSep=nodeSep
-    #    ))
-    #    t += tStep
     
     uniquePoints = []
     for point in points:
@@ -208,9 +200,6 @@ def getPointsAcrossCurve(
             nodeMap=nodeMap
         )
     
-    #for point in uniquePoints:
-    #    print(point.getCoord())
-    #print("")
     return uniquePoints
 
 def jumpOffEdge(
@@ -794,19 +783,8 @@ def queryWaypoints(
         if doubleQuery != None:
             if (waypoint[0] == query and waypoint[2] == doubleQuery) or (waypoint[0] == doubleQuery and waypoint[2] == query):
                 foundWaypoints.append(waypoint)
-            #elif checkCompressed(query, waypoint) and checkCompressed(doubleQuery, waypoint):
-            #    foundWaypoints.append(waypoint)
         elif waypoint[0] == query or waypoint[2] == query:
             foundWaypoints.append(waypoint)
-        #elif query != None:
-        #    if checkCompressed(query, waypoint) and not ignoreCompressed:
-        #        response = queryCompressed(
-        #            waypoints=waypoints,
-        #            compressedWaypoint=waypoint
-        #        )
-        #        for x in response:
-        #            if not x in foundWaypoints:
-        #                foundWaypoints.append(x)
     
     return foundWaypoints
 
@@ -852,14 +830,13 @@ def checkForDuplicates(waypoints):
         ls = queryWaypoints(waypoints=waypoints, query=x[0], doubleQuery=x[1])
         if len(ls) > 1:
             found.extend(ls)
-    return ls
+    return found
 
 def compressWaypoints(
         waypoints: list,
         disconnectedWaypoints: list[tuple[int, int]],
         nodeMap: list[list[str]]
 ):
-    newWaypoints = []
     waypointsByY = []
     for yCoord in range(0, len(nodeMap)):
         waypointsByY.append(queryDisconnectedWaypoints(disconnectedWaypoints=disconnectedWaypoints, y=yCoord))
@@ -905,25 +882,11 @@ def compileWaypointData(
         disconnectedWaypoints=disconnectedWaypoints,
         nodeMap=nodeMap
     )
-    awaypoints = compressWaypoints(
-        waypoints=a,
-        disconnectedWaypoints=disconnectedWaypoints,
-        nodeMap=nodeMap
-    )
     waypoints.sort(key=lambda waypoint: waypoint[0][0])
-
-    #a = checkForDuplicates(waypoints=waypoints)
-    #findInconsistencies(
-    #    waypoints,
-    #    awaypoints,
-    #    nodeMap
-    #)
-    pass
 
     return {
         "waypoints": waypoints,
-        "disconnectedWaypoints": disconnectedWaypoints,
-        "debug": awaypoints
+        "disconnectedWaypoints": disconnectedWaypoints
     }
 
 def findInconsistencies(
@@ -944,7 +907,7 @@ def findInconsistencies(
             if len(response1) != len(response2):
                 print(f"Coord: ({rowIndex}, {columnIndex})")
 
-def loadMap(fileName: str) -> list[list[str]]:
+def loadMap(fileName: str, invalidKeys) -> list[list[str]]:
     with open(fileName, "r", newline="") as f:
         data = csv.reader(f, delimiter=" ", quotechar="|")
         segmentedData = []
@@ -953,53 +916,54 @@ def loadMap(fileName: str) -> list[list[str]]:
         segmentedData.pop(0)
         testGraph = []
         for row in segmentedData:
-            testGraph.append([" " if x == "-1" or x == "5" or x == "6" else "#" for x in row])
+            #testGraph.append([" " if x == "-1" or x == "5" or x == "6" else "#" for x in row])
+            testGraph.append([" " if int(x) in invalidKeys else "#" for x in row])
         return testGraph
 
-def main(map: str, origin: tuple[int, int]):
-    testGraph = loadMap(fileName=map) #(7, 6)
-
-    gravityAccel = 9.81 * 15
-    nodeSep = 15
-
-    enemyData = {
-        "jumpForce": 100,
-        "maxSpeed": (100, 37.5)
-    }
-
-    response = precompileGraph(
-        nodeMap=testGraph,
-        nodeSep=nodeSep,
-        gravity=gravityAccel,
-        enemyData=enemyData,
-        origin=origin
-    )
-
-    allNodes = response["nodes"]
-    waypoints = response["waypointData"]["waypoints"]
-
-    for x in allNodes:
-        testGraph[x[0]][x[1]] = "x"
-    for x in waypoints:
-        testGraph[x[0][0]][x[0][1]] = "W"
-        testGraph[x[2][0]][x[2][1]] = "W"
-    
-    pass
-    for line in testGraph:
-        print(line)
-    for waypoint in waypoints:
-        print(waypoint)
-    pass
-
-def outputTestGraph(fileName: str) -> None:
-    data = loadMap(fileName=fileName)
-    for row in data:
-        print(row)
-    pass
-
-#t = time.time()
-mapName = "Prototype1/transfer/Maps/testMapMove6.csv"
-origin = (16, 0)
+#def main(map: str, origin: tuple[int, int]):
+#    testGraph = loadMap(fileName=map) #(7, 6)
+#
+#    gravityAccel = 9.81 * 15
+#    nodeSep = 15
+#
+#    enemyData = {
+#        "jumpForce": 100,
+#        "maxSpeed": (100, 37.5)
+#    }
+#
+#    response = precompileGraph(
+#        nodeMap=testGraph,
+#        nodeSep=nodeSep,
+#        gravity=gravityAccel,
+#        enemyData=enemyData,
+#        origin=origin
+#    )
+#
+#    allNodes = response["nodes"]
+#    waypoints = response["waypointData"]["waypoints"]
+#
+#    for x in allNodes:
+#        testGraph[x[0]][x[1]] = "x"
+#    for x in waypoints:
+#        testGraph[x[0][0]][x[0][1]] = "W"
+#        testGraph[x[2][0]][x[2][1]] = "W"
+#    
+#    pass
+#    for line in testGraph:
+#        print(line)
+#    for waypoint in waypoints:
+#        print(waypoint)
+#    pass
+#
+#def outputTestGraph(fileName: str) -> None:
+#    data = loadMap(fileName=fileName)
+#    for row in data:
+#        print(row)
+#    pass
+#
+##t = time.time()
+#mapName = "Prototype1/transfer/Maps/testMapMove6.csv"
+#origin = (16, 0)
 #
 #main(map=mapName, origin=origin)
 #outputTestGraph(fileName=mapName)

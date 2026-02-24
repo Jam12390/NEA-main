@@ -309,3 +309,8 @@ fix: add range check to lWall and rWall
 
 item UI windows not showing up in the right places
 in item update loop added a line to set the window to the items position each frame (theres little to no performance impact from this. also fuck you for considering a performance impact ITS A UI WINDOW)
+
+little ui issues (just a lot of playing around with numbers)
+
+small issue with deloaded entities not losing sight
+increment frame count regardless of self.simulated

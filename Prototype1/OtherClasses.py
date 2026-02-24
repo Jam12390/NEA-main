@@ -5,20 +5,22 @@ except:
     from dictionaries import allWeapons, allItems
 
 class Weapon(pygame.sprite.Sprite):
-    def __init__(self, FPS: int, pID: int, startingPosition: pygame.Vector2):
+    def __init__(self, FPS: int, pID: int, startingPosition: pygame.Vector2, inventoryRotation: int = 0):
         super().__init__()
         self.ID = pID
         self.FPS = FPS
         self.__replaces = "weapon"
         self.image = pygame.transform.smoothscale(pygame.image.load(allWeapons[pID]["imgPath"]), (25, 25))
+        self.image = pygame.transform.rotate(self.image, allWeapons[pID]["initialRotation"])
         self.rect = pygame.Surface.get_rect(self.image)
         self.rect.center = (round(startingPosition.x), round(startingPosition.y))
+        self.inventoryRotation = inventoryRotation
         self.damage = allWeapons[pID]["damage"]
         self.currentlyAttacking = False
         self.__attackTimer = 0
         self.__anim = {"time": 1.5} #placeholder for anim dictionary
     
-    def playAnim(self):
+    def playAnim(self): #potential future expansion
         pass
 
     def attack(self, parent):

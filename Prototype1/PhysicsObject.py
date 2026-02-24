@@ -4,7 +4,7 @@ import transfer.precompile as precompile
 
 mapName = "testMapMove8"
 mapPath = f"Prototype1/transfer/Maps/{mapName}.csv"
-nodeMap = precompile.loadMap(fileName=mapPath)
+#nodeMap = precompile.loadMap(fileName=mapPath)
 
 class PhysicsObject(pygame.sprite.Sprite):
     def __init__(

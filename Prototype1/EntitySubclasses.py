@@ -52,7 +52,7 @@ class Player(Entity):
             (self.absoluteCoordinate.y) // 75 + 6,
         )
     
-    def pickupItem(self, ID: int, replaces: str):
+    def pickupItem(self, ID: int, replaces: str = ""):
         newData = None
         if replaces == "weapon":
             newData = self.weapon.ID
@@ -101,15 +101,6 @@ class Player(Entity):
                 self.modifyStat(effect[0], effect[1], effect[2])
         
         #increase speed cap by a factor of _speed
-        #if self._baseVCap[0] * self._speed > self._baseVCap[0]:
-        #    self._velocityCap.x = self._baseVCap[0] * self._speed
-        #else:
-        #    self._velocityCap.x = self._baseVCap[0]
-        #if self._baseVCap[1] * self._speed > self._baseVCap[1]:
-        #    self._velocityCap.y = self._baseVCap[1] * self._speed
-        #else:
-        #    self._velocityCap.y = self._baseVCap[1]
-
         self._velocityCap.x = self._baseVCap[0] * self._speed
         if abs(self._velocityCap.x) > hardVCap.x:
             self._velocityCap.x = hardVCap.x
@@ -124,9 +115,6 @@ class Player(Entity):
 
 
         self._baseVCap = self._originalAttributes["baseVCap"]
-
-        #self._velocityCap.x = max(hardVCap[0], min(self._velocityCap.x, hardVCap[1]))
-        #self._velocityCap.y = max(hardVCap[0], min(self._velocityCap.y, hardVCap[1]))
     
     def crouch(self):
         self.rect.height //= 2 #make player shorter
@@ -177,11 +165,6 @@ class Player(Entity):
             self.getVelocity(turnForce=self._speed)
             
             displacement = self.displaceObject(collidableObjects=collidableObjects, isPlayer=True)
-            #displacement = displacementResponse[0]
-            #ignoreClamp = displacementResponse[1] #playerMoved is irrelevant here => set to (0, 0)
-            
-            #print(displacement)
-            #self.rect.center = (round(self.rect.centerx - displacement.x), round(self.rect.centery - displacement.y)) 
 
             if round(displacement.x) != 0: #if we are actually registering movement
                 if self._velocity.x < 0: #then allow self.facing to change
@@ -295,5 +278,6 @@ class Enemy(Entity):
                 int(((self.absoluteCoordinate.x) // 75))
             )
         else:
+            self.framesSinceLastSight += 1
             self.shouldPath = False
             self.currentPath = []

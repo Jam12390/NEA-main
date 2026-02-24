@@ -53,15 +53,14 @@ def loadMapData(
                 rWall = row[min(len(row) - 1, currentNodePosition[1] + 1)]
                 uWall = segmentedData[max(0, currentNodePosition[0] - 1)][currentNodePosition[1]]
                 dWall = segmentedData[min(len(segmentedData) - 1, currentNodePosition[0] + 1)][currentNodePosition[1]]
-                lWallPresent = not (int(lWall) in INVALIDKEYS or currentNodePosition[1] - 1 < 0)#lWall != STARTKEY and lWall != ITEMKEY and int(lWall) != -1
-                rWallPresent = not (int(rWall) in INVALIDKEYS or currentNodePosition[1] + 1 >= len(row))#rWall != STARTKEY and rWall != ITEMKEY and int(rWall) != -1
+                lWallPresent = not (int(lWall) in INVALIDKEYS or currentNodePosition[1] - 1 < 0)
+                rWallPresent = not (int(rWall) in INVALIDKEYS or currentNodePosition[1] + 1 >= len(row))
                 roofPresent = not int(uWall) in INVALIDKEYS
                 floorPresent = not int(dWall) in INVALIDKEYS
                 sandwichWall = lWallPresent and rWallPresent
                 lCorner = floorPresent and rWallPresent and (not lWallPresent) and (not roofPresent)
                 rCorner = floorPresent and lWallPresent and not rWallPresent and not roofPresent
                 roof = not floorPresent
-                #tags = ["floor"]gb
                 tags = []
                 if roof:
                     tags = ["roof", "wall", "floor"]
@@ -99,7 +98,6 @@ def loadMapData(
                     x=(currentNodePosition[1] * tileSize) - 2*tileSize,
                     y=(currentNodePosition[0] * tileSize)
                 )
-                ID = 0
                 print(ID)
                 items.add(OtherClasses.Item(
                     pID=ID,
@@ -133,21 +131,5 @@ def loadMapData(
     for x in items:
         x.rect.centerx += originOffset.x
         x.rect.centery += originOffset.y
-        #x.UIWindow.rect.centerx += originOffset.x
-        #x.UIWindow.rect.centery += originOffset.y
 
     return (mapData, items, startPos, originOffset, enemyStartPositions)
-
-#response = loadMapData(
-#    mapName="killme",
-#    baseScreenDimensions=(1600, 1280),
-#    STARTKEY=5,
-#    ITEMKEY=6,
-#    ENEMYKEY=6,
-#    tileSize=76,
-#    playerHeight=25
-#)
-#responseLs = [x for x in response[0]]
-#responseLs.sort(key=lambda tile: tile.rect.centery)
-#for tile in responseLs:
-#    print(tile.tags)
