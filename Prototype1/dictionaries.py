@@ -26,6 +26,7 @@ allItems = {
 allWeapons = {
     0: {
         "imgPath": "Sprites/GlassShard.png", #https://www.google.com/url?sa=t&source=web&rct=j&url=https%3A%2F%2Fwww.pixilart.com%2Fart%2Fglass-shard-632f6eebfe9be52&ved=0CBYQjRxqFwoTCJjijaqQ8pIDFQAAAAAdAAAAABAI&opi=89978449
+        "description": "Just a shard of glass - Pretty sharp!",
         "damage": 10,
         "initialRotation": -90,
         "inventoryOffset": pygame.Vector2(-35, 25)

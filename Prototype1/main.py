@@ -3,7 +3,7 @@ import sys
 from EntitySubclasses import Player, Enemy
 import Entity
 from OtherClasses import WallObj, Item, ItemUIWindow
-from button import Button, ImageButton
+import button
 from dictionaries import *
 
 import mapLoading
@@ -289,7 +289,7 @@ def inventory():
     #itemHeaders = [itemFont.render(f"{player.inventory[ID][2]}x  - {allItems[ID]["name"]}", False, textColour) for ID in player.inventory.keys()]
     startingPos = [(screenWidth - 100) // 3 + 75, 175]
     itemHeaders = [
-        Button(
+        button.Button(
             position=pygame.Vector2(startingPos[0], startingPos[1]),
             text=f"{player.inventory[ID][2]}x  - {allItems[ID]["name"]}",
             func=nullFunc,
@@ -349,30 +349,33 @@ def inventory():
         weaponRect = pygame.Surface.get_rect(scaledRect)
         weaponRect.center = (
             (screenWidth - 100) // 6,
-            int(screenHeight - 100) // 2
+            int(screenHeight - 100) // 2 + 50
         )
         weaponRect.center += allWeapons[player.weapon.ID]["inventoryOffset"]
         #background.blit(scaledRect, weaponRect)
 
-        weapon = ImageButton(
-            #position=pygame.Vector2(
-            #(screenWidth - 100) // 6,
-            #int(screenHeight - 100) // 2
-            #),
-            position=pygame.Vector2(25, 115),
-            size=pygame.Vector2(player.weapon.rect.width * 20, player.weapon.rect.height * 20),
+        weapon = button.ImageButton(
+            position=pygame.Vector2(
+            (screenWidth - 100) // 6,
+            int(screenHeight - 100) // 2
+            ),
+            #position=pygame.Vector2(0, 115),
+            size=pygame.Vector2(player.weapon.rect.width * 7.5, player.weapon.rect.height * 20),
             imgPath=allWeapons[player.weapon.ID]["imgPath"],
-            text=[],
-            textColour=pygame.Color(textColour),
+            text=button.wrapText(plainText=allWeapons[player.weapon.ID]["description"], wordsPerLine=5),
+            #textColour=pygame.Color(textColour),
             buttonColour=pygame.Color(backgroundColour),
             hoverColour=pygame.Color(itemHoverColour),
             func=nullFunc,
             absoluteDescriptionPosition=pygame.Vector2(
-                (screenWidth - 100) // 3 * 2 + 25,
-                115
+                (screenWidth - 100) // 6 * 5,
+                75
             )
         )
+        weapon.update(mousePos)
         background.blit(weapon.surface, weapon.rect)
+        if weapon.hoveredOver:
+            background.blit(weapon.description.background, weapon.description.rect)
 
         startingPos = [(screenWidth - 100) // 3 + 100, 150]
         for itemIndex in range(0, len(itemHeaders)):
@@ -400,7 +403,7 @@ def pauseMenu():
 
     startingPos = pygame.Vector2(125, screenHeight - (75*len(buttonText)) + 25)
     for index in range(0, len(buttonText)):
-        renderedText.append(Button(
+        renderedText.append(button.Button(
             position=startingPos,
             text=buttonText[index],
             func=functions[index],
@@ -514,7 +517,7 @@ def characterSelect():
 
     for ID in allCharacters.keys():
         characters.append(
-            ImageButton(
+            button.ImageButton(
                 position=startingPos,
                 imgPath=allCharacters[ID]["imgPath"],
                 func=setPlayer,
