@@ -118,11 +118,13 @@ class Item(pygame.sprite.Sprite):
             self,
             pID: int,
             startingPosition: pygame.Vector2,
-            UIWindow: ItemUIWindow
+            UIWindow: ItemUIWindow,
+            quantity: int = 1
         ):
         super().__init__()
         self.ID = pID
         self.tags = ["item"]
+        self.quantity = quantity
         self.__replaces = allItems[pID]["replaces"]
         self.size = pygame.Vector2(76, 76)
         self.surface = pygame.Surface(self.size)
@@ -140,11 +142,12 @@ class Item(pygame.sprite.Sprite):
         self.UIWindow.update()
 
     def pickup(self, target):
-        newData = target.pickupItem(ID=self.ID, replaces=self.__replaces)
+        newData = target.pickupItem(ID=self.ID, replaces=self.__replaces, quantity=self.quantity)
         if newData == None:
             self.killSelf()
         else:
-            self.swapItem(newID=newData)
+            self.swapItem(newID=newData["ID"])
+            self.quantity = newData["quantity"]
             bufferPos = self.UIWindow.pos
             bufferSize = self.UIWindow.size
             self.UIWindow.killSelf()

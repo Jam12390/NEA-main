@@ -1,12 +1,15 @@
 import pygame
 import typing
 
-class Button(pygame.sprite.Sprite):
+class TextButton(pygame.sprite.Sprite):
     def __init__(
             self,
             position: pygame.Vector2,
             text: str,
             func,
+            descriptionText: str = "",
+            descriptionOffset: pygame.Vector2 = pygame.Vector2(0, 0), #if the position is an offset relative to its parent's position
+            absoluteDescriptionPosition: typing.Optional[pygame.Vector2] = None,
             textColour: pygame.Color = pygame.Color(0, 0, 0),
             buttonColour: pygame.Color = pygame.Color(175, 175, 175),
             hoverColour: pygame.Color = pygame.Color(60, 60, 60),
@@ -34,6 +37,19 @@ class Button(pygame.sprite.Sprite):
         self.hoverColour = hoverColour
         self.hoverOffset = hoverOffset
         self.onClick = func
+
+        if absoluteDescriptionPosition == None and descriptionText != "":
+            self.description = Description(
+                pos=position + descriptionOffset,
+                text=descriptionText
+            )
+        elif descriptionText != "":
+            self.description = Description(
+                pos=absoluteDescriptionPosition,
+                text=descriptionText
+            )
+        else:
+            self.description = None
     
     def checkForHover(self, mousePos):
         inRangeX = mousePos[0] in range(int(self.rect.left + self.hoverOffset.x), int(self.rect.right + self.hoverOffset.x))
@@ -75,8 +91,9 @@ class Description(pygame.sprite.Sprite):
             pos: pygame.Vector2,
             text: list[str],
             font="Calibri",
-            fontSize=25,
-            yOffset: int=75
+            fontSize=20,
+            yOffset: int=75,
+            backgroundColour: pygame.Color = pygame.Color(175, 175, 175)
         ):
 
         self.font = pygame.font.SysFont(font, fontSize)
@@ -85,7 +102,7 @@ class Description(pygame.sprite.Sprite):
         self.lineSize = fontSize + 10
 
         self.background = pygame.Surface((275, len(self.lines) * self.lineSize + 20))
-        self.background.fill((200, 200, 200))
+        self.background.fill(backgroundColour)
 
         lineNumber = 0
         for line in self.lines:

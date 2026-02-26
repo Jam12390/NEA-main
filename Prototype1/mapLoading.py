@@ -19,6 +19,8 @@ def loadMapData(
         playerHeight: int,
         tileData: dict[int, tuple[str, float]] = {0: ("Sprites/DefaultSprite.png", (0.75, 0.5))}, # ID: (spritePath, frictionCoef => (x, y))
 ) -> tuple[pygame.sprite.Group, tuple[int, int]]:
+    INVALIDKEYS = [STARTKEY, ITEMKEY, ENEMYKEY, -1]
+
     mapData = pygame.sprite.Group()
     items = pygame.sprite.Group()
     enemyStartPositions = []
@@ -38,7 +40,7 @@ def loadMapData(
     for row in segmentedData:
         currentNodePosition[1] = 0
         for column in row:
-            if not int(column) == -1 and not int(column) == STARTKEY and not int(column) == ITEMKEY and not int(column) == ENEMYKEY: #if tile not empty
+            if not int(column) in INVALIDKEYS:#int(column) == -1 and not int(column) == STARTKEY and not int(column) == ITEMKEY and not int(column) == ENEMYKEY: #if tile not empty
                 try:
                     sprite = tileData[column][0]
                     frictionCoef = tileData[column][1]
@@ -47,7 +49,6 @@ def loadMapData(
                     frictionCoef = tileData[0][1]
 
                 ########REVERT A
-                INVALIDKEYS = [STARTKEY, ITEMKEY, ENEMYKEY, -1]
 
                 lWall = row[max(0, currentNodePosition[1] - 1)]
                 rWall = row[min(len(row) - 1, currentNodePosition[1] + 1)]

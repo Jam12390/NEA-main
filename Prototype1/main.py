@@ -3,7 +3,7 @@ import sys
 from EntitySubclasses import Player, Enemy
 import Entity
 from OtherClasses import WallObj, Item, ItemUIWindow
-import button
+import button as Button
 from dictionaries import *
 
 import mapLoading
@@ -222,11 +222,11 @@ def mainloop():
                 playerMoved.x = min(0, playerMoved.x)
 
             for wall in walls:
-                wall.rect.centerx -= playerMoved.x
-                wall.rect.centery -= playerMoved.y
+                wall.rect.centerx -= pathing.clamp(mini=-(player._velocityCap.x / 50), inp=playerMoved.x, maxi=player._velocityCap.x/20, invert=True)
+                wall.rect.centery -= pathing.clamp(inp=playerMoved.y, mini=-0.25, maxi=0.25, invert=True)
             for item in items:
-                item.rect.centerx -= playerMoved.x
-                item.rect.centery -= playerMoved.y
+                item.rect.centerx -= pathing.clamp(mini=-(player._velocityCap.x / 50), inp=playerMoved.x, maxi=player._velocityCap.x/20, invert=True)
+                item.rect.centery -= pathing.clamp(inp=playerMoved.y, mini=-0.25, maxi=0.25, invert=True)
             for enemy in debug:
                 enemy.rect.centerx -= playerMoved.x
                 enemy.rect.centery -= playerMoved.y
@@ -277,19 +277,30 @@ def inventory():
     itemTitle = itemTitleFont.render("Items", False, textColour)
 
     itemFont = pygame.font.SysFont("Calibri", 20)
-    itemHeaders = [
-        [
-            itemFont.render(f"- {allItems[ID]["name"]}", False, textColour),
-            itemFont.render(f"Effects: {allItems[ID]["effects"]}", False, textColour)
-        ]
-        for ID in player.inventory.keys() #makes separate lists for each item's name and headers in inventory
-    ]
-    itemDescriptions = [itemFont.render(f"{item[1]}", False, textColour) for item in player.inventory.values()]
+    #itemHeaders = [
+    #    [
+    #        itemFont.render(f"- {allItems[ID]["name"]}", False, textColour),
+    #        itemFont.render(f"Effects: {allItems[ID]["effects"]}", False, textColour)
+    #    ]
+    #    for ID in player.inventory.keys() #makes separate lists for each item's name and headers in inventory
+    #]
+    #itemDescriptions = [itemFont.render(f"{item[1]}", False, textColour) for item in player.inventory.values()]
 
     #itemHeaders = [itemFont.render(f"{player.inventory[ID][2]}x  - {allItems[ID]["name"]}", False, textColour) for ID in player.inventory.keys()]
     startingPos = [(screenWidth - 100) // 3 + 75, 175]
+
+    itemDescriptions = {
+        ID: [
+            "Description:",
+            allItems[ID]["description"],
+            f"Replaces: {allItems[ID]["replaces"]}",
+            f"Effects: {allItems[ID]["effects"]}"
+        ]
+        for ID in player.inventory.keys()
+    }
+
     itemHeaders = [
-        button.Button(
+        Button.TextButton(
             position=pygame.Vector2(startingPos[0], startingPos[1]),
             text=f"{player.inventory[ID][2]}x  - {allItems[ID]["name"]}",
             func=nullFunc,
@@ -297,20 +308,18 @@ def inventory():
             buttonColour=pygame.Color(backgroundColour),
             hoverColour=pygame.Color(itemHoverColour),
             textSize=20,
-            hoverOffset=pygame.Vector2(50, 50)
+            hoverOffset=pygame.Vector2(50, 50),
+            descriptionText=itemDescriptions[ID],
+            absoluteDescriptionPosition=pygame.Vector2(
+                (screenWidth - 100) // 6 * 5,
+                75
+            )
         )
         for ID in player.inventory.keys()
     ]
 
-    itemDescriptions = [
-        [
-            "Description:",
-            allItems[ID]["description"],
-            f"Replaces: {allItems[ID]["replaces"]}",
-            f"Effects: {allItems[ID]["effects"]}"
-        ]
-        for ID in player.inventory.keys()
-    ]
+    fontSize = 20
+    lineSize = fontSize + 15
 
     while inventoryOpen:
         #clock.tick(FPS) #note for future prototypes: ticking the clock twice imitates slow motion (at the cost of FPS ofc)
@@ -354,7 +363,7 @@ def inventory():
         weaponRect.center += allWeapons[player.weapon.ID]["inventoryOffset"]
         #background.blit(scaledRect, weaponRect)
 
-        weapon = button.ImageButton(
+        weapon = Button.ImageButton(
             position=pygame.Vector2(
             (screenWidth - 100) // 6,
             int(screenHeight - 100) // 2
@@ -362,7 +371,7 @@ def inventory():
             #position=pygame.Vector2(0, 115),
             size=pygame.Vector2(player.weapon.rect.width * 7.5, player.weapon.rect.height * 20),
             imgPath=allWeapons[player.weapon.ID]["imgPath"],
-            text=button.wrapText(plainText=allWeapons[player.weapon.ID]["description"], wordsPerLine=5),
+            text=Button.wrapText(plainText=allWeapons[player.weapon.ID]["description"], wordsPerLine=5),
             #textColour=pygame.Color(textColour),
             buttonColour=pygame.Color(backgroundColour),
             hoverColour=pygame.Color(itemHoverColour),
@@ -382,7 +391,9 @@ def inventory():
             #background.blit(itemHeaders[itemIndex], (startingPos[0], startingPos[1]))
             itemHeaders[itemIndex].update(mousePos)
             background.blit(itemHeaders[itemIndex].surface, itemHeaders[itemIndex].rect)
-            startingPos[1] += 50
+            if itemHeaders[itemIndex].hoveredOver:
+                background.blit(itemHeaders[itemIndex].description.background, itemHeaders[itemIndex].description.rect)
+            #startingPos[1] += 50
 
         screen.blit(background, (50, 50))
 
@@ -403,7 +414,7 @@ def pauseMenu():
 
     startingPos = pygame.Vector2(125, screenHeight - (75*len(buttonText)) + 25)
     for index in range(0, len(buttonText)):
-        renderedText.append(button.Button(
+        renderedText.append(Button.TextButton(
             position=startingPos,
             text=buttonText[index],
             func=functions[index],
@@ -472,7 +483,7 @@ def mainmenu():
 
     startingPos = pygame.Vector2(125, screenHeight - (75*len(buttonText)) + 25)
     for index in range(0, len(buttonText)):
-        renderedText.append(Button(
+        renderedText.append(Button.TextButton(
             position=startingPos,
             text=buttonText[index],
             func=functions[index],
@@ -517,7 +528,7 @@ def characterSelect():
 
     for ID in allCharacters.keys():
         characters.append(
-            button.ImageButton(
+            Button.ImageButton(
                 position=startingPos,
                 imgPath=allCharacters[ID]["imgPath"],
                 func=setPlayer,

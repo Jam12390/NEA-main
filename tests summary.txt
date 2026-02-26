@@ -314,3 +314,8 @@ little ui issues (just a lot of playing around with numbers)
 
 small issue with deloaded entities not losing sight
 increment frame count regardless of self.simulated
+
+items not incrementing
+disordered if statements
+
+quantity of items being lost
