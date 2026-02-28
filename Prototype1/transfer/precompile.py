@@ -3,6 +3,7 @@ try:
 except:
     import suvat
 import csv
+import time
 
 
 class Point:
@@ -826,52 +827,51 @@ def loadMap(fileName: str, invalidKeys) -> list[list[str]]:
         return testGraph
 
 
-# def main(map: str, origin: tuple[int, int]):
-#    testGraph = loadMap(fileName=map) #(7, 6)
-#
-#    gravityAccel = 9.81 * 15
-#    nodeSep = 15
-#
-#    enemyData = {
-#        "jumpForce": 100,
-#        "maxSpeed": (100, 37.5)
-#    }
-#
-#    response = precompileGraph(
-#        nodeMap=testGraph,
-#        nodeSep=nodeSep,
-#        gravity=gravityAccel,
-#        enemyData=enemyData,
-#        origin=origin
-#    )
-#
-#    allNodes = response["nodes"]
-#    waypoints = response["waypointData"]["waypoints"]
-#
-#    for x in allNodes:
-#        testGraph[x[0]][x[1]] = "x"
-#    for x in waypoints:
-#        testGraph[x[0][0]][x[0][1]] = "W"
-#        testGraph[x[2][0]][x[2][1]] = "W"
-#
-#    pass
-#    for line in testGraph:
-#        print(line)
-#    for waypoint in waypoints:
-#        print(waypoint)
-#    pass
-#
-# def outputTestGraph(fileName: str) -> None:
-#    data = loadMap(fileName=fileName)
-#    for row in data:
-#        print(row)
-#    pass
-#
-##t = time.time()
-# mapName = "Prototype1/transfer/Maps/testMapMove6.csv"
-# origin = (16, 0)
-#
-# main(map=mapName, origin=origin)
-# outputTestGraph(fileName=mapName)
-# e = time.time()
-# print(e - t)
+def main(map: str, origin: tuple[int, int]):
+    testGraph = loadMap(fileName=map) #(7, 6)
+
+    gravityAccel = 9.81 * 15
+    nodeSep = 15
+
+    enemyData = {
+        "jumpForce": 100,
+        "maxSpeed": (100, 37.5)
+    }
+
+    response = precompileGraph(
+        nodeMap=testGraph,
+        nodeSep=nodeSep,
+        gravity=gravityAccel,
+        enemyData=enemyData,
+        origin=origin
+    )
+
+    allNodes = response["nodes"]
+    waypoints = response["waypointData"]["waypoints"]
+
+    for x in allNodes:
+        testGraph[x[0]][x[1]] = "x"
+    for x in waypoints:
+        testGraph[x[0][0]][x[0][1]] = "W"
+        testGraph[x[2][0]][x[2][1]] = "W"
+
+    pass
+    for line in testGraph:
+        print(line)
+    for waypoint in waypoints:
+        print(waypoint)
+    pass
+
+def outputTestGraph(fileName: str) -> None:
+   data = loadMap(fileName=fileName, invalidKeys=[5, 6, 2, -1])
+   for row in data:
+       print(row)
+   pass
+
+t = time.time()
+mapName = "Prototype1/transfer/Maps/1.csv"
+origin = (16, 0)
+#main(map=mapName, origin=origin)
+outputTestGraph(fileName=mapName)
+e = time.time()
+print(e - t)

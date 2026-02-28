@@ -90,7 +90,7 @@ class PhysicsObject(pygame.sprite.Sprite):
             yVelocity = max(self._velocityCap.y * -1, min(yVelocity, self._velocityCap.y)) #same with yVelocity
         
         if (self.containsForce(axis="x", ref="UserInputRight") and xVelocity < 0) or (self.containsForce(axis="x", ref="UserInputLeft") and xVelocity > 0):
-            xVelocity /= 2 * turnForce
+            xVelocity /= 2 * max(1, turnForce)
         self._velocity = pygame.Vector2(xVelocity, yVelocity)
 
     def getVelocityValue(self):
@@ -477,7 +477,7 @@ class PhysicsObject(pygame.sprite.Sprite):
 
         if not(-2.75 < self._velocity.x and self._velocity.x < 2.75):
             if not ("l" in coef.keys() or "r" in coef.keys()):
-                xAirResistance = abs(airResistanceCoef * self._velocity.x * self.FPS)
+                xAirResistance = abs(airResistanceCoef * strippedResForce.x)
             
             xFriction = coef["d"][0]*strippedResForce.y if "d" in coef.keys() else coef["u"][0]*strippedResForce.y if "u" in coef.keys() else 0
             if strippedResForce.x != 0:

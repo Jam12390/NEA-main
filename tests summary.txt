@@ -319,3 +319,6 @@ items not incrementing
 disordered if statements
 
 quantity of items being lost
+
+into the abyss (going 20 trillion times the speed of light) when speed = 0.25
+forgot to clamp turn speed so velocity was doubling every frame

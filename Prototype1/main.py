@@ -22,6 +22,7 @@ paused = False
 FPS = 60
 
 mapName = "testMapMove8"
+mapName = "1"
 mapPath = f"Prototype1/transfer/Maps/{mapName}.csv"
 
 TILESIZE = 76
@@ -147,6 +148,9 @@ def mainloop():
                         print(x.UIWindow.rect.center)
                 if event.key == pygame.K_o:
                     pass
+                if event.key == pygame.K_u:
+                    for item in items:
+                        print(item.quantity)
                 #if event.key == pygame.K_r:
                 #    debug.paused = not debug.paused
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -194,10 +198,16 @@ def mainloop():
 
             #update all objects (this includes collision detection)
             playerMoved = player.update(collidableObjects=[walls, items])
-            if -(player._velocityCap.x / 50) < playerMoved.x and playerMoved.x < player._velocityCap.x / 20:
-                playerMoved.x = 0
-            if -0.25 < playerMoved.y and playerMoved.y < 0.25:
-                playerMoved.y = 0
+            #if -(player._velocityCap.x / 50) < playerMoved.x and playerMoved.x < player._velocityCap.x / 20:
+            #    playerMoved.x = 0
+            #if -0.25 < playerMoved.y and playerMoved.y < 0.25:
+            #    playerMoved.y = 0
+            playerMoved.x = pathing.clamp(mini=-(player._velocityCap.x / 50), inp=playerMoved.x, maxi=player._velocityCap.x/50, invert=True)
+            playerMoved.y = pathing.clamp(inp=playerMoved.y, mini=-0.25, maxi=0.25, invert=True)
+
+            playerMoved.x = pathing.clamp(inp=playerMoved.x, mini=-player._velocityCap.x/10, maxi=player._velocityCap.x/10)
+            playerMoved.y = pathing.clamp(inp=playerMoved.y, mini=-player._velocityCap.y, maxi=player._velocityCap.y)
+
             player.absoluteCoordinate += playerMoved
             
 
@@ -222,11 +232,11 @@ def mainloop():
                 playerMoved.x = min(0, playerMoved.x)
 
             for wall in walls:
-                wall.rect.centerx -= pathing.clamp(mini=-(player._velocityCap.x / 50), inp=playerMoved.x, maxi=player._velocityCap.x/20, invert=True)
-                wall.rect.centery -= pathing.clamp(inp=playerMoved.y, mini=-0.25, maxi=0.25, invert=True)
+                wall.rect.centerx -= playerMoved.x
+                wall.rect.centery -= playerMoved.y
             for item in items:
-                item.rect.centerx -= pathing.clamp(mini=-(player._velocityCap.x / 50), inp=playerMoved.x, maxi=player._velocityCap.x/20, invert=True)
-                item.rect.centery -= pathing.clamp(inp=playerMoved.y, mini=-0.25, maxi=0.25, invert=True)
+                item.rect.centerx -= playerMoved.x
+                item.rect.centery -= playerMoved.y
             for enemy in debug:
                 enemy.rect.centerx -= playerMoved.x
                 enemy.rect.centery -= playerMoved.y
@@ -609,6 +619,8 @@ def exitCharacterSelect():
     inCharacterSelect = False
 
 #DEBUG
-player.pickupItem(ID=0)
+player.pickupItem(ID=1)
+player.pickupItem(ID=1)
 
+print("--------------------------------")
 mainloop()

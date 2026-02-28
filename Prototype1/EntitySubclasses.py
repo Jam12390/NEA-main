@@ -7,6 +7,7 @@ import transfer.pathing as Pathing
 hardVCap = pygame.Vector2(200, 200)  # (x, y)
 minVCap = pygame.Vector2(75, 50)
 
+minPlayerSpeed = 0.1
 
 class Player(Entity):
     def __init__(
@@ -64,7 +65,7 @@ class Player(Entity):
         if replaces == "weapon":
             newData = {
                 "ID": self.weapon.ID,
-                "quantity": quantity
+                "quantity": 1
             }
             self.weapon.killSelf()  # destroy the current weapon
             self.weapon = Weapon(
@@ -99,7 +100,7 @@ class Player(Entity):
             self.inventory[ID] = [
                 "item",
                 allItems[ID]["description"],
-                1,
+                quantity,
             ]  # add the item normally
         self._recalculateAttributes()
         return newData
@@ -154,6 +155,8 @@ class Player(Entity):
         elif abs(self._velocityCap.y) < minVCap.y:
             self._velocityCap.y = minVCap.y
 
+        #self._speed = max(minPlayerSpeed, self._speed)
+
         self._baseVCap = self._originalAttributes["baseVCap"]
 
     def crouch(self):
@@ -192,6 +195,8 @@ class Player(Entity):
 
         if self.simulated:
             # self._recalculateAttributes()
+            if abs(self._velocity.x) > 1000000:
+                pass
 
             if self.crouched:
                 self.removeForce(axis="x", ref="UserInputLeft")
