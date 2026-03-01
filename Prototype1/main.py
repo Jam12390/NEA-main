@@ -33,6 +33,25 @@ walls = None
 enemies = None
 items = None
 
+player = Player(
+       FPS=FPS,
+       jumpForce=allCharacters[0]["jumpForce"],  # pixels/second
+       maxHP=allCharacters[0]["hp"],
+       defense=allCharacters[0]["defense"],
+       speed=allCharacters[0]["speed"],
+       pAttackCooldown=allCharacters[0]["attackCooldown"],
+       pSize=allCharacters[0]["size"],
+       spritePath=allCharacters[0][
+           "imgPath"
+       ],  # path to the player's sprite goes here
+       tags=["player"],
+       pMass=3,
+       startingPosition=pygame.Vector2(0, 0),  # pygame.math.Vector2(screenWidth/2, screenHeight/2),
+       startingVelocity=pygame.math.Vector2(0, 0),
+       pVelocityCap=pygame.math.Vector2(100, 100),
+       startingWeaponID=0,
+   )
+
 inMainmenu = False
 
 inCharacterSelect = False
@@ -149,22 +168,7 @@ def mainloop():
                 if event.key == pygame.K_ESCAPE and not inventoryOpen:
                     paused = True
                     pauseMenu()
-
-                if event.key == pygame.K_p:
-                    for x in items:
-                        print(x.UIWindow.rect.center)
-                if event.key == pygame.K_o:
-                    print(f"Player - {player.currentNode}")
-                    print(f"Player - {player.absoluteCoordinate}")
-                    for x in enemies:
-                        print(f"Enemy - {x.currentNode}")
-                        print(f"Enemy - {x.absoluteCoordinate}")
-                    pass
-                if event.key == pygame.K_u:
-                    for item in items:
-                        print(item.quantity)
-                # if event.key == pygame.K_r:
-                #    enemies.paused = not enemies.paused
+                    
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not player.weapon.currentlyAttacking:
                     player.weapon.attack(parent=player)
@@ -237,26 +241,6 @@ def mainloop():
 
             # update all objects (this includes collision detection)
             playerMoved = player.update(collidableObjects=[walls, items, enemies], enemies=enemies)
-            #playerMoved.x = pathing.clamp(
-            #    mini=-(player._velocityCap.x / 50),
-            #    inp=playerMoved.x,
-            #    maxi=player._velocityCap.x / 50,
-            #    invert=True,
-            #)
-            #playerMoved.y = pathing.clamp(
-            #    inp=playerMoved.y, mini=-0.25, maxi=0.25, invert=True
-            #)
-#
-            #playerMoved.x = pathing.clamp(
-            #    inp=playerMoved.x,
-            #    mini=-player._velocityCap.x / 5,
-            #    maxi=player._velocityCap.x / 5,
-            #)
-            #playerMoved.y = pathing.clamp(
-            #    inp=playerMoved.y,
-            #    mini=-player._velocityCap.y,
-            #    maxi=player._velocityCap.y,
-            #)
 
             if -MOVEMENTTOLERANCE.x <= playerMoved.x and playerMoved.x <= MOVEMENTTOLERANCE.x:
                 playerMoved.x = 0
@@ -264,8 +248,6 @@ def mainloop():
                 playerMoved.y = 0
 
             player.absoluteCoordinate += playerMoved
-
-            print(player.absoluteCoordinate)
 
             walls.update()
             enemies.update(
@@ -295,7 +277,6 @@ def mainloop():
             for enemy in enemies:
                 enemy.rect.centerx -= playerMoved.x
                 enemy.rect.centery -= playerMoved.y
-                #enemy.absoluteCoordinate -= playerMoved
                 enemy.sightRect.center = enemy.rect.center
 
             player.healthBar.update()
@@ -314,19 +295,16 @@ def redraw():  # it's important to note that redraw() DOES NOT update() any of t
     player.rect.center = (screenWidth / 2, screenHeight / 2)
     player.currentNode = (
         int((player.absoluteCoordinate.y) // 75),  # (y, x)
-        int((player.absoluteCoordinate.x) // 75),# + 1,
+        int((player.absoluteCoordinate.x) // 75),
     )
     screen.blit(player.image, player.rect)
 
     if player.weapon.currentlyAttacking:
         screen.blit(player.weapon.image, player.weapon.rect)
-    
-    #for x in enemies:
-    #    print(x.currentPath)
 
     for sprite in walls:
         screen.blit(sprite.image, sprite.rect)
-        # print(sprite.currentNode)
+        
     walls.draw(screen)
     enemies.draw(screen)
 
@@ -359,15 +337,12 @@ def inventory():
     itemFont = pygame.font.SysFont("Calibri", 20)
     startingPos = [(screenWidth - 100) // 3 + 15, 150]
 
-    itemDescriptions = {
-        ID: [
-            "Description:",
-            allItems[ID]["description"],
-            f"Replaces: {allItems[ID]["replaces"]}",
-            f"Effects: {allItems[ID]["effects"]}",
-        ]
-        for ID in player.inventory.keys()
-    }
+    itemDescriptions = {}
+    for ID in player.inventory.keys():
+        desc = [f"{allItems[ID]["name"]}:"]
+        desc.extend(UI.wrapText(plainText=allItems[ID]["description"], wordsPerLine=5))
+        desc.extend([f"Replaces: {allItems[ID]["replaces"]}", f"Effects: {allItems[ID]["effects"]}"])
+        itemDescriptions[ID] = desc
 
     itemHeaders = [
         UI.TextButton(
@@ -381,14 +356,12 @@ def inventory():
             hoverOffset=pygame.Vector2(50, 50),
             descriptionText=itemDescriptions[ID],
             absoluteDescriptionPosition=pygame.Vector2(
-                (screenWidth - 100) // 6 * 5, 75
+                (screenWidth - 100) // 3 * 2 + 15, 25
             ),
+            titleFirst=True
         )
         for ID in player.inventory.keys()
     ]
-
-    fontSize = 20
-    lineSize = fontSize + 15
 
     while inventoryOpen:
         # clock.tick(FPS) #note for future prototypes: ticking the clock twice imitates slow motion (at the cost of FPS ofc)
@@ -458,27 +431,30 @@ def inventory():
             int(screenHeight - 100) // 2 + 50,
         )
         weaponRect.center += allWeapons[player.weapon.ID]["inventoryOffset"]
-        # background.blit(scaledRect, weaponRect)
+
+        weaponText = [f"{allWeapons[player.weapon.ID]["name"]}:"]
+        weaponText.extend(UI.wrapText(
+            plainText=allWeapons[player.weapon.ID]["description"], wordsPerLine=5
+        ))
 
         weapon = UI.ImageButton(
             position=pygame.Vector2(
                 (screenWidth - 100) // 6, int(screenHeight - 100) // 2
             ),
-            # position=pygame.Vector2(0, 115),
+            
             size=pygame.Vector2(
                 player.weapon.rect.width * 3.75, player.weapon.rect.height * 20
             ),
             imgPath=allWeapons[player.weapon.ID]["imgPath"],
-            text=UI.wrapText(
-                plainText=allWeapons[player.weapon.ID]["description"], wordsPerLine=5
-            ),
-            # textColour=pygame.Color(textColour),
+            text=weaponText,
+            
             buttonColour=pygame.Color(backgroundColour),
             hoverColour=pygame.Color(itemHoverColour),
             func=nullFunc,
             absoluteDescriptionPosition=pygame.Vector2(
                 (screenWidth - 100) // 3 * 2 + 12, 30
             ),
+            titleFirst=True
         )
         weapon.update(mousePos)
         background.blit(weapon.surface, weapon.rect)
@@ -495,7 +471,6 @@ def inventory():
                     itemHeaders[itemIndex].description.background,
                     itemHeaders[itemIndex].description.rect,
                 )
-            # startingPos[1] += 50
 
         screen.blit(background, (50, 50))
 
@@ -513,21 +488,21 @@ def pauseMenu():
         "Paused", False, (255, 255, 255)
     )
 
-    buttonText = ["Resume", "Abandon Run", "Options", "Exit to Desktop"]
+    buttonText = ["Resume", "Abandon Run", "Exit to Desktop"]
     renderedText = []
-    functions = [unpause, abandonRun, openOptions, quit]
+    functions = [unpause, abandonRun, quit]
 
-    startingPos = pygame.Vector2(25, screenHeight - (75 * len(buttonText)) + 25)
+    startingPos = pygame.Vector2(25, screenHeight - (75 * len(buttonText)) - 25)
     for index in range(0, len(buttonText)):
         renderedText.append(
             UI.TextButton(
                 position=startingPos,
                 text=buttonText[index],
                 func=functions[index],
-                textSize=25,
+                textSize=35,
             )
         )
-        startingPos.y += renderedText[0].rect.height + 25
+        startingPos.y += renderedText[0].rect.height + 20
 
     for button in renderedText:
         button.rect.left = 25
@@ -565,9 +540,10 @@ def unpause():
 
 def abandonRun():
     global paused
+    global inCharacterSelect
+    inCharacterSelect = True
     paused = False
-    player.rect.center = (round(screenWidth / 2), round(screenHeight / 2))
-    player._velocity = pygame.Vector2(0, 0)
+    setup(mapName=mapName)
 
 
 def openOptions():
@@ -585,24 +561,27 @@ def mainmenu():
     titleText = pygame.font.SysFont("Calibri", 90).render(
         "'Blended'", True, (255, 255, 255)
     )
+    subtitleText = pygame.font.SysFont("Calibri", 15).render(
+        "AKA the skeleton sidescroller template i worked so hard on", True, (255, 255, 255)
+    )
 
-    buttonText = ["Play", "Options", "Quit"]
-    functions = [play, openOptions, quit]
+    buttonText = ["Play", "Exit To Desktop"]
+    functions = [play, quit]
 
     renderedText = []
 
-    startingPos = pygame.Vector2(125, screenHeight - (75 * len(buttonText)) + 25)
+    startingPos = pygame.Vector2(25, screenHeight - (75 * len(buttonText)) - 50)
     for index in range(0, len(buttonText)):
         renderedText.append(
             UI.TextButton(
                 position=startingPos,
                 text=buttonText[index],
                 func=functions[index],
-                textSize=25,
-                size=pygame.Vector2(200, 50),
+                textSize=40,
+                #size=pygame.Vector2(200, 50),
             )
         )
-        startingPos.y += renderedText[0].size.y + 25
+        startingPos.y += 90#renderedText[0].size.y + 25
 
     while inMainmenu:
         redraw()
@@ -613,6 +592,7 @@ def mainmenu():
         screen.blit(dim, (0, 0))
 
         screen.blit(titleText, (25, 25))
+        screen.blit(subtitleText, (50, 100))
 
         mousePos = pygame.mouse.get_pos()
 
@@ -658,7 +638,7 @@ def characterSelect():
                     f"Size: {allCharacters[ID]["size"]}",
                 ],
                 size=pygame.Vector2(100, 100),
-                descriptionOffset=pygame.Vector2(250, 0),
+                descriptionOffset=pygame.Vector2(75, -125),
                 data=ID
             )
         )
@@ -703,14 +683,14 @@ def deathScreen():
     buttonText = ["Retry", "Exit To Desktop"]
     buttonFuncs = [setup, quit]
 
-    startingPos = pygame.Vector2(125, screenHeight - 75 * len(buttonText))
+    startingPos = pygame.Vector2(125, screenHeight - 100 * len(buttonText))
 
     buttons = [
         UI.TextButton(
-            position=pygame.Vector2(startingPos.x, startingPos.y + 75 * index),
+            position=pygame.Vector2(startingPos.x, startingPos.y + 100 * index),
             text=buttonText[index],
             func=buttonFuncs[index],
-            textSize=25
+            textSize=45
         )
         for index in range(0, len(buttonText))
     ]
@@ -791,5 +771,7 @@ setup(mapName="testMapMove8")
 
 if not inCharacterSelect and not inMainmenu:
     setPlayer(1)
+
+player.pickupItem(ID=1, quantity=2)
 
 mainloop()

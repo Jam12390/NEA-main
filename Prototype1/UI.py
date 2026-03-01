@@ -89,6 +89,7 @@ class TextButton(pygame.sprite.Sprite):
         fontName: str = "Calibri",
         textSize: int = 15,
         hoverOffset: pygame.Vector2 = pygame.Vector2(0, 0),
+        titleFirst: bool = False
     ):
         self.font = pygame.font.SysFont(fontName, size=textSize)
 
@@ -118,11 +119,11 @@ class TextButton(pygame.sprite.Sprite):
 
         if absoluteDescriptionPosition == None and descriptionText != "":
             self.description = Description(
-                pos=position + descriptionOffset, text=descriptionText
+                pos=position + descriptionOffset, text=descriptionText, titleFirst=titleFirst, fontSize=textSize - 3
             )
         elif descriptionText != "":
             self.description = Description(
-                pos=absoluteDescriptionPosition, text=descriptionText
+                pos=absoluteDescriptionPosition, text=descriptionText, titleFirst=titleFirst, fontSize=textSize - 3
             )
         else:
             self.description = None
@@ -178,19 +179,31 @@ class Description(pygame.sprite.Sprite):
         fontSize=20,
         yOffset: int = 75,
         backgroundColour: pygame.Color = pygame.Color(175, 175, 175),
+        titleFirst: bool = False
     ):
 
         self.font = pygame.font.SysFont(font, fontSize)
-        self.lines = [self.font.render(line, False, (0, 0, 0)) for line in text]
+        self.titleFont = pygame.font.SysFont(font, fontSize + 10)
+
+        if titleFirst:
+            self.lines = [self.titleFont.render(text[0], True, (0, 0, 0))]
+            text.pop(0)
+        else:
+            self.lines = []
+        
+        self.lines.extend(self.font.render(line, False, (0, 0, 0)) for line in text)
 
         self.lineSize = fontSize + 10
 
-        self.background = pygame.Surface((275, len(self.lines) * self.lineSize + 20))
+        self.background = pygame.Surface((270, len(self.lines) * self.lineSize + 60))
         self.background.fill(backgroundColour)
 
         lineNumber = 0
         for line in self.lines:
             self.background.blit(line, (10, lineNumber * self.lineSize + 15))
+            if titleFirst:
+                lineNumber += 1
+                titleFirst = False
             lineNumber += 1
 
         self.rect = pygame.Surface.get_rect(self.background)
@@ -216,7 +229,8 @@ class ImageButton(pygame.sprite.Sprite):
             0, 0
         ),  # if the position is an offset relative to its parent's position
         absoluteDescriptionPosition: typing.Optional[pygame.Vector2] = None,
-        data = None
+        data = None,
+        titleFirst = False
     ) -> None:
         super().__init__()
 
@@ -240,9 +254,9 @@ class ImageButton(pygame.sprite.Sprite):
         self.onClick = func
 
         if absoluteDescriptionPosition == None:
-            self.description = Description(pos=position + descriptionOffset, text=text)
+            self.description = Description(pos=position + descriptionOffset, text=text, titleFirst=titleFirst)
         else:
-            self.description = Description(pos=absoluteDescriptionPosition, text=text)
+            self.description = Description(pos=absoluteDescriptionPosition, text=text, titleFirst=titleFirst)
 
     def checkForHover(self, mousePos):
         inRangeX = mousePos[0] in range(
