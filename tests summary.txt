@@ -322,3 +322,9 @@ quantity of items being lost
 
 into the abyss (going 20 trillion times the speed of light) when speed = 0.25
 forgot to clamp turn speed so velocity was doubling every frame
+
+instant death
+checked if enemies existed, but not if they were actually colliding with the player before reducing health
+
+health bar not decreasing by the correct amount
+i used a percentage of __remainingBar rather than __totalBar when reducing health (go me)

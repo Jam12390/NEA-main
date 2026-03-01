@@ -3,11 +3,13 @@ from Entity import Entity
 from OtherClasses import Weapon
 from dictionaries import allItems
 import transfer.pathing as Pathing
+import UI
 
 hardVCap = pygame.Vector2(200, 200)  # (x, y)
 minVCap = pygame.Vector2(75, 50)
 
 minPlayerSpeed = 0.1
+
 
 class Player(Entity):
     def __init__(
@@ -24,8 +26,16 @@ class Player(Entity):
         startingPosition: pygame.Vector2,
         pVelocityCap: pygame.Vector2,
         startingVelocity: pygame.Vector2 = pygame.Vector2(0, 0),
-        pTag: str = "None",
+        tags: list[str] = ["None"],
         startingWeaponID: int = 0,
+        healthBar=UI.HealthBar(
+            pSize=pygame.Vector2(400, 50),
+            position=pygame.Vector2(25, 725),
+            maxHP=100,
+            currentHP=100,
+            fontName="Calibri",
+        ),
+        invFrames: int = 10,
     ):
         super().__init__(
             FPS=FPS,
@@ -40,7 +50,7 @@ class Player(Entity):
             startingPosition=startingPosition,
             pVelocityCap=pVelocityCap,
             startingVelocity=startingVelocity,
-            pTag=pTag,
+            tags=tags,
         )
         self.inventory = {}
         self.fastFalling = False
@@ -60,13 +70,14 @@ class Player(Entity):
             (self.absoluteCoordinate.y) // 75 + 6,
         )
 
+        self.healthBar = healthBar
+        self.invFrames = invFrames
+        self.remainingIFrames = 0
+
     def pickupItem(self, ID: int, quantity: int = 1, replaces: str = ""):
         newData = None
         if replaces == "weapon":
-            newData = {
-                "ID": self.weapon.ID,
-                "quantity": 1
-            }
+            newData = {"ID": self.weapon.ID, "quantity": 1}
             self.weapon.killSelf()  # destroy the current weapon
             self.weapon = Weapon(
                 FPS=self.FPS,
@@ -75,20 +86,17 @@ class Player(Entity):
                     round(self.rect.centerx), round(self.rect.centery)
                 ),
             )  # and replace it with a new instance of the picked up weapon
-            
+
         elif (
             ID in self.inventory.keys()
         ):  # if there is nothing to replace and the item is in the inventory
             self.inventory[ID][2] += quantity  # increment the quantity of said item
-            
+
         elif replaces.isdigit():  # if replaces is an ID (defaults to item)
             if (
                 int(replaces) in self.inventory.keys()
             ):  # presence check for item to replace
-                newData = {
-                    "ID": int(replaces),
-                    "quantity": quantity
-                }
+                newData = {"ID": int(replaces), "quantity": quantity}
                 self.inventory.pop(int(replaces))  # delete it
             self.inventory[ID] = [
                 "item",
@@ -155,7 +163,7 @@ class Player(Entity):
         elif abs(self._velocityCap.y) < minVCap.y:
             self._velocityCap.y = minVCap.y
 
-        #self._speed = max(minPlayerSpeed, self._speed)
+        # self._speed = max(minPlayerSpeed, self._speed)
 
         self._baseVCap = self._originalAttributes["baseVCap"]
 
@@ -193,10 +201,9 @@ class Player(Entity):
                     ID=int(key.split("-")[0]), instance=key.split("-")[1], forced=False
                 )
 
+        self.remainingIFrames -= 1
+
         if self.simulated:
-            # self._recalculateAttributes()
-            if abs(self._velocity.x) > 1000000:
-                pass
 
             if self.crouched:
                 self.removeForce(axis="x", ref="UserInputLeft")
@@ -258,7 +265,7 @@ class Enemy(Entity):
         pAggroRange=300,
         pFacing="r",
         weaponID=0,
-        pTag="Enemy",
+        tags=["Enemy"],
         pIgnoreYFriction=False,
     ):
         super().__init__(
@@ -274,7 +281,7 @@ class Enemy(Entity):
             startingPosition,
             pVelocityCap,
             startingVelocity,
-            pTag,
+            tags,
             pIgnoreYFriction,
         )
         self.aggroRange = pAggroRange

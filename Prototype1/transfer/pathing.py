@@ -392,11 +392,11 @@ def checkGroundPathValidity(
 def clamp(inp: float, mini: float, maxi: float, invert: bool = False):
     if invert and (inp >= maxi or inp <= mini):
         return inp
-    #elif inp < mini and inp < maxi:
+    # elif inp < mini and inp < maxi:
     #    return mini
-    #elif inp < mini:
+    # elif inp < mini:
     #    return mini
-    #return inp
+    # return inp
     return max(min(maxi, inp), mini)
 
 

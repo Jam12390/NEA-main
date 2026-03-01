@@ -828,22 +828,19 @@ def loadMap(fileName: str, invalidKeys) -> list[list[str]]:
 
 
 def main(map: str, origin: tuple[int, int]):
-    testGraph = loadMap(fileName=map) #(7, 6)
+    testGraph = loadMap(fileName=map)  # (7, 6)
 
     gravityAccel = 9.81 * 15
     nodeSep = 15
 
-    enemyData = {
-        "jumpForce": 100,
-        "maxSpeed": (100, 37.5)
-    }
+    enemyData = {"jumpForce": 100, "maxSpeed": (100, 37.5)}
 
     response = precompileGraph(
         nodeMap=testGraph,
         nodeSep=nodeSep,
         gravity=gravityAccel,
         enemyData=enemyData,
-        origin=origin
+        origin=origin,
     )
 
     allNodes = response["nodes"]
@@ -862,16 +859,18 @@ def main(map: str, origin: tuple[int, int]):
         print(waypoint)
     pass
 
-def outputTestGraph(fileName: str) -> None:
-   data = loadMap(fileName=fileName, invalidKeys=[5, 6, 2, -1])
-   for row in data:
-       print(row)
-   pass
 
-t = time.time()
-mapName = "Prototype1/transfer/Maps/1.csv"
-origin = (16, 0)
-#main(map=mapName, origin=origin)
-outputTestGraph(fileName=mapName)
-e = time.time()
-print(e - t)
+def outputTestGraph(fileName: str) -> None:
+    data = loadMap(fileName=fileName, invalidKeys=[5, 6, 2, -1])
+    for row in data:
+        print(row)
+    pass
+
+
+# t = time.time()
+# mapName = "Prototype1/transfer/Maps/1.csv"
+# origin = (16, 0)
+##main(map=mapName, origin=origin)
+# outputTestGraph(fileName=mapName)
+# e = time.time()
+# print(e - t)
