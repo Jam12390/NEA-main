@@ -42,8 +42,8 @@ def loadMapData(
     ]  # shouldn't be extended but needs to be modifiable => [y, x]
     startPos = (0, 0)
     initialOffset = [
-        (baseScreenDimensions[0]) / 2,
-        (baseScreenDimensions[1] + tileSize) / 2,
+        (baseScreenDimensions[0] / 2) - tileSize,
+        (baseScreenDimensions[1] + tileSize),
     ]  # (baseScreenDimensions[0] + tileSize / 2, baseScreenDimensions[1] + tileSize / 2) [x, y] -  - tileSize  + tileSize
     initialOffset[1] -= tileSize - playerHeight
 
@@ -109,9 +109,9 @@ def loadMapData(
                     OtherClasses.WallObj(
                         size=pygame.Vector2(tileSize, tileSize),
                         position=pygame.Vector2(
-                            x=(currentNodePosition[1] * tileSize)
-                            - 2
-                            * tileSize,  # - tileSize//2,# + (1 if tileSize%2 > 0 else 0),
+                            x=(currentNodePosition[1] * tileSize) - tileSize,
+                            #- 2
+                            #* tileSize,  # - tileSize//2,# + (1 if tileSize%2 > 0 else 0),
                             y=(currentNodePosition[0] * tileSize),
                         ),
                         frictionCoef=frictionCoef,
@@ -123,13 +123,13 @@ def loadMapData(
                 )
             elif int(column) == STARTKEY:
                 startPos = pygame.Vector2(
-                    -initialOffset[1] + (currentNodePosition[0] * tileSize),
-                    initialOffset[0] + (currentNodePosition[1] * tileSize),
+                    (currentNodePosition[0] * tileSize), #-initialOffset[1] + 
+                    (currentNodePosition[1] * tileSize), #initialOffset[0] +
                 )
             elif int(column) == ITEMKEY:
                 ID = random.randint(0, len(dictionaries.allItems) - 1)
                 itemPos = pygame.Vector2(
-                    x=(currentNodePosition[1] * tileSize) - 2 * tileSize,
+                    x=(currentNodePosition[1] * tileSize),# - 2 * tileSize,
                     y=(currentNodePosition[0] * tileSize),
                 )
                 print(ID)
@@ -149,22 +149,21 @@ def loadMapData(
                 print("reg")
                 enemyStartPositions.append(
                     pygame.Vector2(
-                        x=(currentNodePosition[1] * tileSize) - tileSize,
+                        x=(currentNodePosition[1] * tileSize),# - tileSize,
                         y=(currentNodePosition[0] * tileSize),
                     )
                 )
             currentNodePosition[1] += 1
         currentNodePosition[0] += 1
 
-    originOffset = pygame.Vector2(x=(startPos[1] * 1), y=(startPos[0] * -1))
     for node in mapData:
-        node.rect.centerx += originOffset.x
-        node.rect.centery += originOffset.y
-    for x in enemyStartPositions:  ##here
-        x.x += originOffset.x
-        x.y += originOffset.y
+        node.rect.centerx += initialOffset[0]
+        node.rect.centery -= initialOffset[1]
+    #for x in enemyStartPositions:  ##here
+    #    x.x += initialOffset[0]
+    #    x.y -= initialOffset[1]
     for x in items:
-        x.rect.centerx += originOffset.x
-        x.rect.centery += originOffset.y
+        x.rect.centerx += initialOffset[0] - tileSize
+        x.rect.centery -= initialOffset[1]
 
-    return (mapData, items, startPos, originOffset, enemyStartPositions)
+    return (mapData, items, startPos, enemyStartPositions) #originOffset

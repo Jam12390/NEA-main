@@ -328,3 +328,10 @@ checked if enemies existed, but not if they were actually colliding with the pla
 
 health bar not decreasing by the correct amount
 i used a percentage of __remainingBar rather than __totalBar when reducing health (go me)
+
+currentNode going too far at times
+absoluteCoordinate.x increases too far right (or not enough left)
+clamps. again.
+
+enemies stopping just too far from player
+added a condition which just paths straight to the player if its on the same node

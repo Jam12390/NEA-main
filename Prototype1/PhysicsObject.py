@@ -19,6 +19,7 @@ class PhysicsObject(pygame.sprite.Sprite):
         startingVelocity: pygame.Vector2 = pygame.Vector2(0, 0),
         tags: list[str] = ["none"],
         pIgnoreYFriction=False,
+        screenDimensions: tuple[int, int] = (1000, 800)
     ):
         super().__init__()
         self.FPS = FPS
@@ -28,7 +29,7 @@ class PhysicsObject(pygame.sprite.Sprite):
         )
         self.absoluteCoordinate = startingPosition
         self.rect = pygame.Surface.get_rect(self.image)
-        self.rect.center = (round(startingPosition.x), round(startingPosition.y))
+        self.rect.center = (round(startingPosition.x + screenDimensions[0] // 2), round(startingPosition.y - screenDimensions[1]))
         self.simulated = True
         self.tags = tags
         self._mass = pMass
@@ -48,7 +49,7 @@ class PhysicsObject(pygame.sprite.Sprite):
 
         self.currentNode = (
             ((self.absoluteCoordinate.x) // 75),
-            (self.absoluteCoordinate.y) // 75 + 6,
+            (self.absoluteCoordinate.y) // 75,
         )
 
     def recalculateResultantForce(
@@ -185,8 +186,7 @@ class PhysicsObject(pygame.sprite.Sprite):
                     ):
                         self.healthBar.changeHP(magnitude=-collidable.weapon.damage)
                         self.remainingIFrames = self.invFrames
-                        print("e")
-
+                        
                 if (
                     "wall" in collidable.tags or "floor" in collidable.tags
                 ) and collidable.simulated:  # thinking ahead for when objects are de-rendered to improve performance - source: https://www.digitalocean.com/community/tutorials/how-to-compare-two-lists-in-python len(set(collidable.tags) & set(["wall", "floor"])) > 0

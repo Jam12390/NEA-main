@@ -36,6 +36,7 @@ class Player(Entity):
             fontName="Calibri",
         ),
         invFrames: int = 10,
+        screenDimensions: tuple[int, int] = (1000, 800)
     ):
         super().__init__(
             FPS=FPS,
@@ -51,6 +52,7 @@ class Player(Entity):
             pVelocityCap=pVelocityCap,
             startingVelocity=startingVelocity,
             tags=tags,
+            screenDimensions=screenDimensions
         )
         self.inventory = {}
         self.fastFalling = False
@@ -67,7 +69,7 @@ class Player(Entity):
 
         self.currentNode = (
             ((self.absoluteCoordinate.x) // 75),
-            (self.absoluteCoordinate.y) // 75 + 6,
+            (self.absoluteCoordinate.y) // 75,
         )
 
         self.healthBar = healthBar
@@ -191,7 +193,7 @@ class Player(Entity):
 
         self._velocity.y = -40
 
-    def update(self, collidableObjects) -> pygame.Vector2:
+    def update(self, collidableObjects, enemies) -> pygame.Vector2:
         for key in self._effects.keys():
             self._effects[key][1] -= (
                 1 / self.FPS
@@ -240,7 +242,7 @@ class Player(Entity):
                     self.weapon.rect.left = round(self.rect.right)
 
             self.weapon.rect.centery = round(self.rect.centery)
-            self.weapon.update()
+            self.weapon.update(enemies=enemies)
 
             self.rect.clamp_ip(pygame.display.get_surface().get_rect())
 
@@ -267,6 +269,7 @@ class Enemy(Entity):
         weaponID=0,
         tags=["Enemy"],
         pIgnoreYFriction=False,
+        screenDimensions: tuple[int, int] = (1000, 800)
     ):
         super().__init__(
             FPS,
@@ -283,6 +286,7 @@ class Enemy(Entity):
             startingVelocity,
             tags,
             pIgnoreYFriction,
+            screenDimensions=screenDimensions
         )
         self.aggroRange = pAggroRange
         self.aggrod = False
@@ -299,7 +303,7 @@ class Enemy(Entity):
 
         self.currentNode = (
             int((self.absoluteCoordinate.x) // 75),
-            int((self.absoluteCoordinate.y) // 75 + 6),
+            int((self.absoluteCoordinate.y) // 75),
         )
 
         self.sightRect = pygame.Rect(
@@ -314,13 +318,13 @@ class Enemy(Entity):
         precompiledData,
         nodeMap,
         nodeSep,
-        pathingTo,
+        target,
         playerRect,
     ):
         self.framesSinceLastPath += 1
-        self.simulated = self.currentNode[1] in range(
-            int(pathingTo[1] - 10), int(pathingTo[1] + 10)
-        )
+        #self.simulated = self.currentNode[1] in range(
+        #    int(pathingTo[1] - 10), int(pathingTo[1] + 10)
+        #)
         if self.simulated:
             self.seen = pygame.Rect.colliderect(self.sightRect, playerRect)
 
@@ -332,9 +336,9 @@ class Enemy(Entity):
             if self.framesSinceLastSight > 180:  # 3 secs
                 self.aggrod = False
 
-            if self.framesSinceLastPath > 0:  #
+            if self.framesSinceLastPath > 0 and self.aggrod:  #
                 self.path(
-                    pathingTo=pathingTo,
+                    target=target,
                     precompiledData=precompiledData,
                     nodeMap=nodeMap,
                     nodeSep=nodeSep,
@@ -342,6 +346,9 @@ class Enemy(Entity):
                 self.framesSinceLastPath = 0
 
             self.shouldPath = self.aggrod
+
+            if not self.aggrod:
+                self.removeForce(axis="x", ref="closePath")
 
             self._resultantForce = self.recalculateResultantForce(
                 forceMult=self._speed, includedForces=[]

@@ -19,7 +19,7 @@ class Weapon(pygame.sprite.Sprite):
         self.FPS = FPS
         self.__replaces = "weapon"
         self.image = pygame.transform.smoothscale(
-            pygame.image.load(allWeapons[pID]["imgPath"]), (25, 25)
+            pygame.image.load(allWeapons[pID]["imgPath"]), (25, 50)
         )
         self.image = pygame.transform.rotate(
             self.image, allWeapons[pID]["initialRotation"]
@@ -44,9 +44,16 @@ class Weapon(pygame.sprite.Sprite):
                 "time"
             ]  # treating __anim as a map here since it's the easiest to read and understand
             self.playAnim()
+    
+    def checkForHits(self, enemies):
+        for enemy in enemies:
+            if pygame.Rect.colliderect(self.rect, enemy.rect):
+                enemy.killSelf()
 
-    def update(self):
+    def update(self, enemies):
         self.__attackTimer -= 1 / self.FPS
+        if self.currentlyAttacking:
+            self.checkForHits(enemies=enemies)
         if self.__attackTimer <= 0:
             self.currentlyAttacking = False
 

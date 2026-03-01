@@ -234,7 +234,7 @@ def flattenPath(nodeMap, path):
     flattenedPath = []
     for node in path:
         currentCo = list(node)
-        while nodeMap[int(currentCo[0] + 1)][int(currentCo[1])] == " ":
+        while nodeMap[min(len(nodeMap), int(currentCo[0] + 1))][int(currentCo[1])] == " " and currentCo[0] < len(nodeMap):
             currentCo[0] += 1
         flattenedPath.append(tuple(currentCo))
     return flattenedPath
@@ -452,16 +452,20 @@ def main(
     # awaypoints = precompiledData["waypointData"]["debug"]
     disconnectedWaypoints = precompiledData["waypointData"]["disconnectedWaypoints"]
 
-    start = findFreeNode(nodeMap=nodeMap, start=start)
 
-    end = findFreeNode(nodeMap=nodeMap, start=end)
-    # print(f"end - {end}")
-    end = precompile.getLowerNodes(
-        topNodes=[
-            precompile.Point(x=end[1], y=end[0], nodeMap=nodeMap),
-        ],
-        nodeMap=nodeMap,
-    )["floorNodes"][0].getCoord()
+    try:
+        #start = findFreeNode(nodeMap=nodeMap, start=start)
+
+        end = findFreeNode(nodeMap=nodeMap, start=end)
+        # print(f"end - {end}")
+        end = precompile.getLowerNodes(
+            topNodes=[
+                precompile.Point(x=end[1], y=end[0], nodeMap=nodeMap),
+            ],
+            nodeMap=nodeMap,
+        )["floorNodes"][0].getCoord()
+    except:
+        return []
 
     # print(f"{start} -> {end}")
     path = pathfind(

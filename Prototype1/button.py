@@ -38,7 +38,7 @@ class TextButton(pygame.sprite.Sprite):
         self.surface.blit(self.text, self.textRect)
 
         self.rect = pygame.Surface.get_rect(self.surface)
-        self.rect.center = (round(position.x), round(position.y))
+        self.rect.topleft = (round(position.x), round(position.y))
 
         self.colour = buttonColour
         self.hoveredOver = False
@@ -124,8 +124,8 @@ class Description(pygame.sprite.Sprite):
             lineNumber += 1
 
         self.rect = pygame.Surface.get_rect(self.background)
-        self.rect.centerx = round(pos.x)
-        self.rect.centery = round(pos.y + yOffset)
+        self.rect.left = round(pos.x)
+        self.rect.top = round(pos.y + yOffset)
 
 
 class ImageButton(pygame.sprite.Sprite):
@@ -141,14 +141,16 @@ class ImageButton(pygame.sprite.Sprite):
         # fontName: str = "Calibri",
         # textSize: int = 15,
         hoverOffset: pygame.Vector2 = pygame.Vector2(0, 0),
-        size: pygame.Vector2 = pygame.Vector2(100, 100),
+        size: pygame.Vector2 = pygame.Vector2(200, 100),
         descriptionOffset: pygame.Vector2 = pygame.Vector2(
             0, 0
         ),  # if the position is an offset relative to its parent's position
         absoluteDescriptionPosition: typing.Optional[pygame.Vector2] = None,
-        imageRectOffset: pygame.Vector2 = pygame.Vector2(0, 0),
+        data = None
     ) -> None:
         super().__init__()
+
+        self.data = data
 
         self.image = pygame.transform.smoothscale(pygame.image.load(imgPath), size=size)
 
