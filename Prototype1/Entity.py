@@ -33,7 +33,7 @@ class Entity(PhysicsObject):
         startingVelocity: pygame.math.Vector2 = pygame.math.Vector2(0, 0),
         tags: str = ["None"],
         pIgnoreYFriction=False,
-        screenDimensions: tuple[int, int] = (1000, 800)
+        screenDimensions: tuple[int, int] = (1000, 800),
     ):
         super().__init__(
             FPS=FPS,
@@ -45,7 +45,7 @@ class Entity(PhysicsObject):
             startingVelocity=startingVelocity,
             pVelocityCap=pVelocityCap,
             pIgnoreYFriction=pIgnoreYFriction,
-            screenDimensions=screenDimensions
+            screenDimensions=screenDimensions,
         )
         self.isGrounded = False
         self._jumpForce = jumpForce
@@ -168,7 +168,7 @@ class Entity(PhysicsObject):
         nodeMap,
         nodeSep,
         gravity=9.81 * 15,
-        rePathTolerance=1,
+        rePathTolerance=1, # node
     ):
         pathingTo = target.currentNode
         pathingTo = (int(pathingTo[0]), int(pathingTo[1]))
@@ -197,6 +197,7 @@ class Entity(PhysicsObject):
             #    nodeMap=nodeMap
             # )["floorNodes"][0].getCoord() != pathingTo or not self.isPathing: #this is nested to save what little performance i have left
             self.currentPathEnd = pathingTo
+
             newPath = pathing.main(
                 precompiledData=precompiledData,
                 nodeMap=nodeMap,
@@ -207,46 +208,49 @@ class Entity(PhysicsObject):
                 maxXSpeed=self._velocityCap.x,
                 gravity=gravity,
             )
+
             if len(newPath) > 0:
                 self.currentPath = newPath
             cleanPath = []
             for x in self.currentPath:
                 if not x in cleanPath:
                     cleanPath.append(x)
+
             self.currentPath = cleanPath
+
             if len(self.currentPath) == 1:
                 if self.currentPath[0] == self.currentNode:
                     self.isPathing = False
                     self.currentPath = []
-                else:
+                elif len(self.currentPath) > 0:
                     self.isPathing = True
-            else:
+            elif len(self.currentPath) > 0:
                 self.isPathing = True
             # self.shouldPath = False
-            self.isPathing = True
             pass
         if len(self.currentPath) > 0:
 
             if self.currentNode in self.currentPath:
-                
+
                 index = self.currentPath.index(self.currentNode)
                 for x in range(0, index + 1):
                     self.framesSinceLastNode = 0
                     self.previousPathCoord = self.currentPath[0]
                     self.removeForce(axis="x", ref="xPathing")
                     self.currentPath.pop(0)
-                    
+
             elif self.framesSinceLastNode > self.FPS / 2 or (
-                self.currentNode[0] > self.currentPath[0][0]
+                self.currentNode[0] < self.currentPath[0][0] # (y, x)
                 and self.currentNode[1] == self.currentPath[0][1]
             ):
                 self.framesSinceLastNode = 0
+                self.previousPathCoord = self.currentPath[0]
                 self.currentPath.pop(0)
                 self.removeForce(axis="x", ref="xPathing")
-                try:
-                    self.previousPathCoord = self.currentPath[0]
-                except:
-                    pass
+                #try:
+                #    self.previousPathCoord = self.currentPath[0]
+                #except:
+                #    pass
 
             try:
                 xNodeDiff = (
@@ -281,8 +285,15 @@ class Entity(PhysicsObject):
             self.isPathing = False
             self.shouldPath = False
             self._velocity.x /= 1.5
-        elif self.currentNode == pathingTo and not self.containsForce(axis="x", ref="closePath"):
-            self.addForce(axis="x", direction= "l" if target.rect.centerx < self.rect.centerx else "r", magnitude=1000, ref="closePath")
+        elif self.currentNode == pathingTo and not self.containsForce(
+            axis="x", ref="closePath"
+        ):
+            self.addForce(
+                axis="x",
+                direction="l" if target.rect.centerx < self.rect.centerx else "r",
+                magnitude=1000,
+                ref="closePath",
+            )
 
     """
     self.FPS is assigned from a global variable denoting the number of game updates per second

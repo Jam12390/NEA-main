@@ -22,6 +22,7 @@ class PhysicsObject(pygame.sprite.Sprite):
         screenDimensions: tuple[int, int] = (1000, 800)
     ):
         super().__init__()
+        startingPosition = pygame.Vector2(startingPosition)
         self.FPS = FPS
         self.size = pSize
         self.image = pygame.transform.smoothscale(
@@ -29,7 +30,7 @@ class PhysicsObject(pygame.sprite.Sprite):
         )
         self.absoluteCoordinate = startingPosition
         self.rect = pygame.Surface.get_rect(self.image)
-        self.rect.center = (round(startingPosition.x + screenDimensions[0] // 2), round(startingPosition.y - screenDimensions[1]))
+        self.rect.center = (round(startingPosition.x), round(startingPosition.y)) #(round(startingPosition.x + screenDimensions[0] // 2), round(startingPosition.y - screenDimensions[1]))
         self.simulated = True
         self.tags = tags
         self._mass = pMass

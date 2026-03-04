@@ -6,6 +6,7 @@ from dictionaries import *
 import UI
 
 import mapLoading
+import nMapLoading
 from transfer import precompile, pathing
 
 screenWidth = 1000
@@ -20,7 +21,7 @@ paused = False
 
 FPS = 60
 
-mapName = "testMapMove8"
+mapName = "testMapMoveEn"
 PLAYERSIZE = pygame.Vector2(50, 50)
 TILESIZE = 76
 
@@ -71,13 +72,13 @@ def setup(mapName: str):
 
     mapPath = f"Prototype1/transfer/Maps/{mapName}.csv"
 
-    mapResponse = mapLoading.loadMapData(
+    mapResponse = nMapLoading.loadMapData(
         mapName=mapName,
         STARTKEY=5,
         ITEMKEY=6,
         ENEMYKEY=2,
         tileSize=TILESIZE,
-        baseScreenDimensions=(screenWidth, screenHeight),
+        baseScreenDimensions=pygame.Vector2(screenWidth, screenHeight),
         playerHeight=25,
     )
 
@@ -119,10 +120,40 @@ def setup(mapName: str):
             )
         )
 
-    for x in enemies:
-        x.absoluteCoordinate.x += TILESIZE
+    #######REWORK MAP
+    #for x in enemies:
+    #    x.absoluteCoordinate.x += TILESIZE
         #x.absoluteCoordinate.y -= mapResponse[3].y
         #x.absoluteCoordinate.x -= screenWidth / 2
+
+def outputEnemyCoords():
+    global enemies
+    for enemy in enemies:
+        print(enemy.absoluteCoordinate)
+
+def outputPathingData():
+    global enemies
+
+    print(f"Player:")
+    print(f"Absolute Coordinate: {player.absoluteCoordinate}")
+    print(f"Current Node: {player.currentNode}\n---\n")
+
+    for enemy in enemies:
+        if enemy.currentPath != []:
+            print(f"Aggro Status: {enemy.aggrod}")
+            print(f"Absolute Coordinate: {enemy.absoluteCoordinate}")
+            print(f"Current Node: {enemy.currentNode}")
+            print(f"Current Path: {enemy.currentPath}")
+            print(f"Velocity: {enemy._velocity}")
+            print(f"Acceleration: {enemy.getAcceleration()}")
+            print(f"X: {enemy._xForces}")
+            print(f"Y: {enemy._yForces}")
+            print("---\n")
+
+def debugCollide():
+    for e in enemies:
+        if pygame.Rect.colliderect(player.rect, e.sightRect):
+            print("yes")
 
 mainLoopRunning = True
 
@@ -130,12 +161,20 @@ inventoryOpen = False
 
 previousBlockedMotion = ()
 
+observePaths = True
+observeNodes = True
+pauseOnObservation = True
 
 def mainloop():
     global inventoryOpen
     global paused
     global inDeathScreen
     global inCharacterSelect
+
+    global observePaths
+    global observeNodes
+    global pauseOnObservation
+
     pygame.display.set_caption("Main loop")
 
     if inMainmenu:
@@ -168,6 +207,26 @@ def mainloop():
                 if event.key == pygame.K_ESCAPE and not inventoryOpen:
                     paused = True
                     pauseMenu()
+                
+                if event.key == pygame.K_l:
+                    print(f"Player: {player.currentNode}")
+                    print("--------")
+                    for enemy in enemies:
+                        if observePaths:
+                            print(f"Enemy: {enemy.currentPath}")
+                        if observeNodes:
+                            print(f"Enemy: {enemy.currentNode}")
+                        print("---")
+                    print("----------------------------")
+                    if pauseOnObservation:
+                        pass
+                if event.key == pygame.K_o:
+                    pauseOnObservation = not pauseOnObservation
+
+                if event.key == pygame.K_n:
+                    observeNodes = not observeNodes
+                if event.key == pygame.K_m:
+                    observePaths = not observePaths
                     
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not player.weapon.currentlyAttacking:
@@ -258,6 +317,10 @@ def mainloop():
                 target=player,
                 playerRect=player.rect,
             )
+
+            for enemy in enemies:
+                #print(enemy.absoluteCoordinate)
+                print(enemy.currentNode)
 
             if "u" in player.blockedMotion:
                 playerMoved.y = max(0, playerMoved.y)
@@ -750,7 +813,7 @@ def setPlayer(ID):
         pVelocityCap=pygame.math.Vector2(100, 100),
         startingWeaponID=0,
     )
-    player.absoluteCoordinate -= pygame.Vector2(screenWidth + 76, -screenHeight / 2)
+    #player.absoluteCoordinate -= pygame.Vector2(screenWidth + 76, -screenHeight / 2)
     player.healthBar.resetHP()
     #player.absoluteCoordinate.x -= TILESIZE//2
     inCharacterSelect = False
@@ -767,7 +830,7 @@ def exitCharacterSelect():
     inCharacterSelect = False
 
 print("--------------------------------")
-setup(mapName="testMapMove8")
+setup(mapName=mapName)
 
 if not inCharacterSelect and not inMainmenu:
     setPlayer(1)

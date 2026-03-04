@@ -286,7 +286,7 @@ camera - works
 chase across map => yes
 
 
-proto3
+proto3 - UI, compatibility and bugfixes
 
 very few issues
 
@@ -319,6 +319,7 @@ items not incrementing
 disordered if statements
 
 quantity of items being lost
+newData used the quantity parameter of pickupItem rather than the current quantity of the item to be replaced in the player's inventory
 
 into the abyss (going 20 trillion times the speed of light) when speed = 0.25
 forgot to clamp turn speed so velocity was doubling every frame
@@ -335,3 +336,13 @@ clamps. again.
 
 enemies stopping just too far from player
 added a condition which just paths straight to the player if its on the same node
+
+while pathing, an enemy's node might become wrong, leading to bad pathing
+(maybe when changing absoluteCoordinate?)
+(maybe in path()? other enemies who aren't pathing aren't affected)
+
+enemies' nodes are being updated too far right(...?)
+i dont think xPathing force is being removed properly
+(aggrod condition stopping self.path from being called? => no force or path updates)
+(frame delay for self.path is too long?)
+(self.path)

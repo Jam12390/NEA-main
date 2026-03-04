@@ -98,7 +98,7 @@ class Player(Entity):
             if (
                 int(replaces) in self.inventory.keys()
             ):  # presence check for item to replace
-                newData = {"ID": int(replaces), "quantity": quantity}
+                newData = {"ID": int(replaces), "quantity": self.inventory[int(replaces)][2]}
                 self.inventory.pop(int(replaces))  # delete it
             self.inventory[ID] = [
                 "item",
@@ -336,7 +336,10 @@ class Enemy(Entity):
             if self.framesSinceLastSight > 180:  # 3 secs
                 self.aggrod = False
 
-            if self.framesSinceLastPath > 0 and self.aggrod:  #
+
+            self.shouldPath = self.aggrod
+
+            if self.framesSinceLastPath > 0:# and self.aggrod:  #
                 self.path(
                     target=target,
                     precompiledData=precompiledData,
@@ -345,10 +348,9 @@ class Enemy(Entity):
                 )
                 self.framesSinceLastPath = 0
 
-            self.shouldPath = self.aggrod
-
             if not self.aggrod:
                 self.removeForce(axis="x", ref="closePath")
+                self.removeForce(axis="x", ref="xPathing")
 
             self._resultantForce = self.recalculateResultantForce(
                 forceMult=self._speed, includedForces=[]
@@ -358,9 +360,9 @@ class Enemy(Entity):
 
             displacement = self.displaceObject(collidableObjects=collidableObjects)
 
-            if -2.5 < displacement.x and displacement.x < 2.5:
+            if abs(displacement.x) < 2.5:
                 displacement.x = 0
-            if -0.25 < displacement.y and displacement.y < 0.25:
+            if abs(displacement.y) < 0.25:
                 displacement.y = 0
 
             if self.currentNode == self.previousPathCoord:

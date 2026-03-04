@@ -219,10 +219,7 @@ def getTopDownPath(
         stack.push(currentNode.coord)
         currentNode = nodes[
             getNodeFromCoord(nodes=nodes, coord=currentNode.previousNode.coord)
-        ]  # I KNOW THIS IS AN ERROR, IT WONT LET ME SPECIFY THE TYPE TO REMOVE THE ERROR DDD:
-
-    # if returnDestination:
-    #    return nodes[len(nodes) - 1] if len(nodes) > 1 else None
+        ]
 
     while not stack.isEmpty():
         path.append(stack.pop())
@@ -259,15 +256,21 @@ def pathfind(
     if not (rangeCheckSt.isValid() and rangeCheckEn.isValid()):
         return []
 
-    start = precompile.getLowerNodes(
-        topNodes=[precompile.Point(x=start[1], y=start[0], nodeMap=nodeMap)],
-        nodeMap=nodeMap,
-    )["floorNodes"][0]
+    try:
+        start = precompile.getLowerNodes(
+            topNodes=[precompile.Point(x=start[1], y=start[0], nodeMap=nodeMap)],
+            nodeMap=nodeMap,
+        )["floorNodes"][0]
+    except:
+        pass
 
-    end = precompile.getLowerNodes(
-        topNodes=[precompile.Point(x=end[1], y=end[0], nodeMap=nodeMap)],
-        nodeMap=nodeMap,
-    )["floorNodes"][0]
+    try:
+        end = precompile.getLowerNodes(
+            topNodes=[precompile.Point(x=end[1], y=end[0], nodeMap=nodeMap)],
+            nodeMap=nodeMap,
+        )["floorNodes"][0]
+    except:
+        pass
 
     absolutePath = getTopDownPath(  # for some reason
         graph=graph,
@@ -331,13 +334,15 @@ def pathfind(
                 else:
                     finalPath.extend(flattenedAbsolutePath)
             finalPath.extend(
-                getTopDownPath(
+                flattenPath(
+                    nodeMap=nodeMap,
+                    path=getTopDownPath(
                     graph=graph,
                     start=nearestEndWaypoint,
                     end=end.getCoord(),
                     tolerance=tolerance,
                     directionalGraph=None,
-                )
+                ))
             )
         else:
             reversed = list(tuple(flattenedPath))
