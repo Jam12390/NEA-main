@@ -53,7 +53,7 @@ player = Player(
        startingWeaponID=0,
    )
 
-inMainmenu = False
+inMainmenu = True
 
 inCharacterSelect = False
 
@@ -78,8 +78,7 @@ def setup(mapName: str):
         ITEMKEY=6,
         ENEMYKEY=2,
         tileSize=TILESIZE,
-        baseScreenDimensions=pygame.Vector2(screenWidth, screenHeight),
-        playerHeight=25,
+        baseScreenDimensions=pygame.Vector2(screenWidth, screenHeight)
     )
 
     enemyData = {"jumpForce": 130, "maxSpeed": (50, 50)}

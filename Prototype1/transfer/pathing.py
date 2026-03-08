@@ -58,8 +58,7 @@ def getHeuristic(start, end, axis: Optional[str] = None) -> float:
 def getAdjacentNodes(
     graph,
     node,
-    directionalGraph: Optional[list[tuple[Union[tuple[int, int], str], ...]]],
-    debug=None,
+    directionalGraph: Optional[list[tuple[Union[tuple[int, int], str], ...]]] # nullable [ ( (y1, x1), "<->", (y2, x2) ) ]
 ):
     if directionalGraph != None:
         useDirections = True
@@ -172,8 +171,7 @@ def getTopDownPath(
         adjacentNodes = getAdjacentNodes(
             graph=graph,
             node=currentNode,
-            directionalGraph=directionalGraph,
-            debug=debug,
+            directionalGraph=directionalGraph
         )
         for node in adjacentNodes:
             index = getNodeFromCoord(nodes=nodes, coord=node)

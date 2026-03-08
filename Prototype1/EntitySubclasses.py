@@ -35,7 +35,7 @@ class Player(Entity):
             currentHP=100,
             fontName="Calibri",
         ),
-        invFrames: int = 10,
+        invFrames: int = 60,
         screenDimensions: tuple[int, int] = (1000, 800)
     ):
         super().__init__(

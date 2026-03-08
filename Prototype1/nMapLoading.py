@@ -19,7 +19,6 @@ def loadMapData(
     ENEMYKEY: int,
     tileSize: int,
     baseScreenDimensions: tuple[int, int],
-    playerHeight: int,
     tileData: dict[int, tuple[str, float]] = {
         0: ("Sprites/DefaultSprite.png", (0.75, 0.5))
     },  # ID: (spritePath, frictionCoef => (x, y))
@@ -149,6 +148,5 @@ loadMapData(
     ITEMKEY=6,
     ENEMYKEY=2,
     tileSize=76,
-    baseScreenDimensions=pygame.Vector2(1000, 800),
-    playerHeight=25,
+    baseScreenDimensions=pygame.Vector2(1000, 800)
 )

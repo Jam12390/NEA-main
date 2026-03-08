@@ -1,0 +1,266 @@
+import operator // using python imports here as it makes explaining op() functions easier
+
+//////////////////////////////
+//INITIAL PATH FLATTENING
+//////////////////////////////
+
+function flatten(
+        nodeMap,
+        path //in index form in (x, y)
+    ):
+    flattenedPath = []
+    for node in path:
+        dynaNode = [node[0], node[1]] // dynaNode is the dynamic version of the static node tuple
+        while nodeMap[dynaNode[1] + 1] == " ": // while there are available empty nodes below the current node
+            dynaNode[1] += 1: // move the current node down
+        endwhile
+        if NOT dynaNode in flattenedPath:
+            flattenedPath.append((dynaNode[0], dynaode[1])) // add a tuple version (static) to the flattenedPath
+        endif
+    next node
+    
+    previousNode = 0
+    currentIndex = 1
+    finalPath = [flattenedPath[0]]
+    while currentIndex != flattenedPath.length: // iterate through flattenedPath using an index
+        if flattenedPath[previousNode][0] != flattenedPath[currentNode][0] AND flattenedPath[previousNode][1] != flattenedPath[currentNode][1]:
+            if flattenedPath[previousNode][1] < flattenedPath[currentNode][1]: // if the previous node was above the current node
+                verticality = "down" // track the direction of motion as "down"
+            else:
+                verticality = "up" // else "up"
+            endif
+            
+            if flattenedPath[previousNode][0] < flattenedPath[currentNode][0]: // do a similar form of interpretation for the x-axis
+                direction = "right" // note: I'm using strings to store directions since it's easy to interpret during maintenance
+            else:
+                direction = "left"
+            endif
+
+            if direction == "right":
+                op = operator.add // there's no pseudocode version for operator management, so this is the python version
+            else:
+                op = operator.sub // makes op a reference to the subtract operator
+            endif
+            
+            if verticality == "up":
+                finalPath.append([op(flattenedPath[currentNode][0], 1), flattenedPath[currentNode][1]]) // using op() as a function translates to [num1] [operator referenced] [num2]
+            else:
+                finalPath.append([op(flattenedPath[previousNode][0], 1), flattenedPath[previousNode][1]]) //adds a corner node to the final path
+            endif
+        endif
+
+        finalPath.append(flattenedPath[currentNode])
+        previousNode += 1
+        currentNode += 1
+    endwhile
+    return finalPath
+endfunction
+
+///////////////////////////
+//JUMP-UPS
+///////////////////////////
+
+function findIntermediatePathNode( // this is meant to find a node 1 away from the target corner (see explanation 2-3 under Jump-Ups)
+        screen,
+        walls,
+        nodeMap,
+        startNode,
+        originNodeOffset,
+        nodeSeparation,
+        mapOffset,
+        jumpHeight,
+        jumpRadius,
+        xGraphLimit,
+        direction
+    ):
+
+    circleSightRadius = 70
+
+    lineStart = ( // positioned at the enemy's ground position
+        originNodeOffset + (startNode[0] * nodeSeparation) - mapOffset[0],
+        originNodeOffset + (startNode[1] * nodeSeparation) - mapOffset[1]
+    )
+    lineEnd = (lineStart[0], lineStart[1] - jumpHeight) // positioned at the enemy's maximum jump height
+
+    jumpLine = pygame.draw.line(
+        surface=screen,
+        color=(0,255,0),
+        start_pos=lineStart,
+        end_pos=lineEnd
+    )
+
+    collided = false
+    xLine = startNode[0]
+    yLine = startNode[1]
+
+    if direction == "l": // uses the same operator system as flatten()
+        op = operator.sub
+        inverse = operator.add
+    else:
+        op = operator.add
+        inverse = operator.sub
+    endif
+    
+    // this listens if the jumpline collides with anything
+    while (NOT collided) AND xGraphLimit[0] <= xLine AND xLine <= xGraphLimit[1]: // xGraphLimit[leftLim, rightLim]
+        jumpLine.move(op(0, nodeDistance), 0) // moves the line left/right 1
+        xLine = op(xLine, 1)
+        for wall in walls:
+            if pygame.Rect.colliderect(wall, jumpLine): // cycles through collidable walls to check for collision
+                collided = true
+                jumpLine.move(inverse(0, nodeDistance), 0)
+                xLine = inverse(xLine, 1)
+                break
+            endif
+        next wall
+    endwhile
+    
+    platformFound = [false, null] //[found, node]
+    excludedNodes = []
+
+    if collided:
+        xCircleCenter = lineStart[0] - ((startNode[0] - xLine) * nodeDistance)
+        jumpCircle = pygame.draw.circle(surface=screen, color=(0,0,255), center=(xCircleCenter, lineStart[1]), radius=jumpRadius)
+
+        collisionState = [false, false]
+        collidedWith = null
+        previousState = null
+
+        while circleSightRadius > 0 AND NOT platformFound[0]:
+            chordLength = round(math.sqrt((2 * jumpRadius**2) * (1 - math.cosine(2 * circleSightRadius)))) // works out the chord's length
+            chordLength = chordLength DIV 2
+            chordHeight = round(jumpRadius * math.cosine(circleSightRadius))
+
+            chordEnd = (op(circleCenterx, chordLength), lineStart[1] - chordHeight)
+
+            for wall in walls:
+                if pygame.Rect.collidepoint(wall, chordEnd): // another linear search (post-redesign note: this O(n^2) time complexity is one of the reasons for the redesign)
+                    collisionState[1] = true
+                    collidedWith = wall
+                    break
+                else:
+                    collisionState[1] = false
+                    collidedWith = null
+                endif
+            next wall
+        endwhile
+            
+        if collisionState[0] AND NOT collisionState[1]: // tests if we stopped colliding with a platform
+            found = testCollisionChange(previousState, chordEnd, chordHeight, direction) // check if there's a floor to stand on
+            if found:
+                topY = collidedWith.top
+                index = yVertex DIV nodeSeparation
+                nodeIndex = (index, op(xLine, 1)) // stores the coordinate in (y, x) format
+                platformFound = [true, nodeIndex]
+            endif
+        endif
+        
+        previousChordState = {
+            "chord": chordEnd,
+            "collidedWith": collidedWith,
+            "chordHeight": chordHeight
+        }
+    endif
+    
+    if NOT (collided OR platformFound[0]): // if we haven't collided with anything
+        xExclusionOrigin = startNode[0] + 1
+        yExclusionOrigin = startNode[1] - (jumpHeight DIV nodeSeparation) // start excluding these nodes from future calculations
+        currentNode = [xExclusionOrigin, yExclusionOrigin]
+
+        while nodeMap[currentNode[1]][currentNode[0]] != "#": // # is the notation for a wall - exclude all higher nodes until a wall is reached
+            excludedNodes.append(currentNode)
+            currentNode[1] -= 1 // decrement currentNode.y
+        endwhile
+
+        currentNode = [op(xExclusionOrigin, 1), yExclusionOrigin]
+
+        while nodeMap[currentNode[1]][currentNode[0]] != "#" AND xGraphLimit[0] <= currentNode[0] AND currentNode[0] <= xGraphLimit[1]: // exclude nodes on the x-axis similarly
+            excludedNodes.append(currentNode)
+            currentNode[0] = op(currentNode[0], 1)
+        endwhile
+    endif
+    
+    return [platformFound, excludedNodes]
+endfunction
+
+function testCollisionChange(previousState, pointToTest, currentChordHeight): // tests whether the change in collision was from the chord length reducing or if we found a platform
+    loweredChord = (pointToTest[0], pointToTest[1] + currentChordHeight - previousState["chordHeight"]) // reminder: + is down in terms of y-coord
+
+    if pygame.Rect.collidepoint(previousState["collidedWith"], loweredChord):
+        return true
+    else:
+        return false
+endfunction
+
+
+///////////////////////////
+//GAPS
+///////////////////////////
+
+function crossGap(
+        screen,
+        walls,
+        path,
+        startNode,
+        endNode,
+        playerNodeOffset,
+        nodeSeparation,
+        jumpRadius
+    ):
+    startPoint = ( // places the rect on the player and therefore needs the player's position as an offset
+        playerNodeOffset + startNode[0] * nodeSeparation,
+        playerNodeOffset + startNode[1] * nodeSeparation
+    )
+    endPoint = (
+        playerNodeOffset + endNode[0] * nodeSeparation,
+        playerNodeOffset + endNode[1] * nodeSeparation
+    )
+
+    sightLine = pygame.draw.line(screen, (0, 0, 255), startPoint, endPoint)
+
+    for wall in walls:
+        if wall.clipline(sightLine).length != 0: // checks if there's a straight uninterrupted path between the start and end
+            return [false, path]
+        endif
+    next wall
+    
+    if math.sqrt((endPoint[0] - startPoint[0])**2 - (endPoint[1] - startPoint[1])**2) <= jumpRadius: // if the end lies within the player's "jump circle", we can cut the path down
+        path = cropPath(path, startNode, endNode)
+        return [true, path]
+    endif
+    return [false, path]
+endfunction
+
+function cropPath(path, cropStart, cropEnd): // cuts a section out of the path
+    currentIndex = path.index(cropStart) + 1
+
+    while path[currentIndex] != cropEnd:
+        path.remove(currentIndex)
+    endwhile
+
+    path.insert(currentIndex, "JUMP")
+    return path
+endfunction
+
+///////////////////////////
+//POST EXCLUSION CLEANUP
+///////////////////////////
+
+function cleansePathingState(dirtyGraph, excludedNodes): // removes excluded nodes and all connected nodes
+    toClean = new Stack
+    for node in excludedNodes:
+        if node in dirtyGraph:
+            toClean.push(node) // toClean contains all the nodes which should be removed
+        endif
+    next node
+    
+    while NOT toClean.isEmpty():
+        currentNode = toClean.pop()
+        for node in dirtyGraph[node]["nextNodes"]:
+            toClean.push(node) // cascade exclude
+        next node
+        dirtyGraph.remove(currentNode)
+    endwhile
+    
+    return dirtyGraph //now clean
+endfunction

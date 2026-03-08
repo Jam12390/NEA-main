@@ -1,223 +1,160 @@
-import operator
+class TopDownNode
+    public coord
+    public shortestDistance
+    private __heuristic
+    public previousNode
+    public nextNodes
+    public visited
 
-//INITIAL PATH FLATTENING
-
-def flatten(
-        nodeMap,
-        path //in index form in (x, y)
-    ):
-    flattenedPath = []
-    for node in path:
-        dynaNode = [node[0], node[1]] //dynaNode is the dynamic version of the static node tuple
-        while nodeMap[dynaNode[1] + 1] == " ": //while there are available empty nodes below the current node
-            dynaNode[1] += 1: //move the current node down
-        if NOT dynaNode in flattenedPath:
-            flattenedPath.append(dynaNode)
+    public procedure new(pCoord, pShortestDistance, targetCoord, pPreviousNode=null)
+        coord = pCoord
+        shortestDistance = pShortestDistance
+        __heuristic = ((targetCoord[0] - coord[0]) ^ 2 + (targetCoord[1] - coord[1]) ^ 2) ^ 0.5
+        previousNode = pPreviousNode
+        nextNodes = []
+        visited = false
+    endprocedure
     
-    previousNode = 0
-    currentIndex = 1
-    finalPath = [flattenedPath[0]]
-    while currentIndex != flattenedPath.length:
-        if flattenedPath[previousNode][0] != flattenedPath[currentNode][0] AND flattenedPath[previousNode][1] != flattenedPath[currentNode][1]:
-            if flattenedPath[previousNode][1] < flattenedPath[currentNode][1]:
-                verticality = "down"
-            else:
-                verticality = "up"
-            
-            if flattenedPath[previousNode][0] < flattenedPath[currentNode][0]:
-                direction = "right"
-            else:
-                direction = "left"
+    public function getHeuristic()
+        return __heuristic
+    endfunction
+endclass // contains base data about each node
 
-            if direction == "right":
-                op = operator.add
-            else:
-                op = operator.sub
-            
-            if verticality == "up":
-                finalPath.append([op(flattenedPath[currentNode][0], 1), flattenedPath[currentNode][1]])
-            else:
-                finalPath.append([op(flattenedPath[previousNode][0], 1), flattenedPath[previousNode][1]]) //adds a corner node to the final path
+class Stack
+    private __data
 
-        finalPath.append(flattenedPath[currentNode])
-        previousNode += 1
-        currentNode += 1
+    public procedure new()
+        __data = [] // list
+    endprocedure
+
+    public procedure push(data)
+        __data.append(data)
+    endprocedure
+
+    public function peek()
+        return __data[__data.length - 1] // end value
+    endfunction
+
+    public function pop() // removes end value and returns it
+        temp = __data[__data.length - 1]
+        __data.pop(data.length - 1)
+        return temp
+    endfunction
+
+    public function isEmpty()
+        return data.length == 0
+    endfunction
+endclass
+
+function getNextNodeToVisit(availableNodes)
+    // sorts availableNodes by __heuristic + shortestDistance, choosing the lowest value which hasn't been visited
+    // returns the index of this object, -1 if no node is found
+    pass
+
+function getAdjacentNodes(node, graph)
+    // gets the top, left, down and right nodes around the current node, provided they are free
+    // returns a list of coords in the form [(y, x), (y, x), ...]
+    pass
+
+function checkCoordPresence(availableNodes, query) // query => (y, x). Checks if a node exists, returns bool whereas indexNode returns an int
+    for int i=0 to availableNodes.length - 1
+        if availableNodes[i].coord == query:
+            return true
+        endif
+    next i
+    return false
+endfunction
+
+function indexNode(list, query) // gets the index of a queried coord, returning -1 if the node doesn't exist (used for lists of objects)
+    for i=0 to list.length - 1
+        if list[i].coord == query:
+            return i
+        endif
+    next i
+    return -1
+endfunction
+
+function cascadeUpdate(nodes, startNode): // recursive function which reduces all of startNode's neighbours' shortestDistance attributes
+    for node in startNode.nextNodes:
+        index = indexNode(nodes, node.coord)
+        nodes[index].shortestDistance = startNode.shortestDistance + 1
+        nodes = cascadeUpdate(nodes, nodes[index])
+    next node
+    return nodes // returns the updated list
+endfunction
+
+function getAbsolutePath( // A* pathing algorithm
+    startNode,
+    endNode, // => (y, x)
+    graph // unsorted list of all valid nodes
+):
+    availableNodes = [
+        new TopDownNode(
+            startNode,
+            0,
+            endNode
+        )
+    ]
+    nextNode = getNextNodeToVisit(availableNodes) // start at startNode
+    while nextNode != -1:
+        currentNode = availableNodes[nextNode]
+
+        adjNodes = getAdjacentNodes(currentNode.coord, graph)
+        newDist = currentNode.shortestDistance + 1
+
+        for i=0 to adjNodes.length:
+            if checkCoordPresence(availableNodes, adjNodes[i]): // if the object already exists in the list
+                index = indexNode(availableNodes, adjNodes[i]) // index it
+                if availableNodes[index].shortestDistance > newDist:
+                    availableNodes[index].shortestDistance = newDist // and update its shortestDistance if our newDist is lower
+                    availableNodes = cascadeUpdate(availableNodes, availableNodes[index]) // update neighbours
+                    availableNodes[nextNode].nextNodes.append(adjNodes[i]) // and add its coordinate to currentNode's nextNode list
+                endif
+            else:
+                availableNodes.append( // otherwise add the object as a new node
+                    new TopDownNode(
+                        adjNodes[i],
+                        availableNodes[index].shortestDistance + 1,
+                        endNode.coord,
+                        availableNodes[index].coord
+                    )
+                )
+                availableNodes[nextNode].nextNodes.append(adjNodes[i])
+
+                if adjNodes[i] == endNode:
+                    break // leave the loop if any node leads to endNode
+                endif
+            endif
+        next i
+
+        nextNode = getNextNodeToVisit(availableNodes) // find the next node to travel to
     endwhile
-    return finalPath
 
-/////////////////////////////////////
-//JUMP-UPS
-/////////////////////////////////////
+    if nextNode != -1:
+        pathStack = new Stack
 
-def findIntermediatePathNode(
-        screen,
-        walls,
-        nodeMap,
-        startNode,
-        originNodeOffset,
-        nodeSeparation,
-        mapOffset,
-        jumpHeight,
-        jumpRadius,
-        xGraphLimit,
-        direction
-    ):
+        currentCoord = endNode
+        currentNode = availableNodes[indexNode(availableNodes, endNode)]
 
-    circleSightRadius = 70
+        while currentCoord != startNode: // iterate through previousNodes until we reach the start
+            pathStack.push(currentCoord)
 
-    lineStart = (
-        originNodeOffset + (startNode[0] * nodeSeparation) - mapOffset[0],
-        originNodeOffset + (startNode[1] * nodeSeparation) - mapOffset[1]
-    )
-    lineEnd = (lineStart[0], lineStart[1] - jumpHeight)
+            currentCoord = currentNode.previousNode
+            currentNode = availableNodes[indexNode(availableNodes, currentCoord)]
+        endwhile
 
-    jumpLine = pygame.draw.line(
-        surface=screen,
-        color=(0,255,0),
-        start_pos=lineStart,
-        end_pos=lineEnd
-    )
+        pathStack.push(startNode)
 
-    collided = false
-    xLine = startNode[0]
-    yLine = startNode[1]
+        reversePath = []
 
-    if direction == "l":
-        op = operator.sub
-        inverse = operator.add
+        while NOT pathStack.isEmpty(): // use the stack's FILO nature to reverse the path (since it's currently back to front)
+            toAdd = pathStack.pop()
+            if NOT toAdd in reversePath:
+                reversePath.append(toAdd)
+            endif
+        endwhile
+
+        return reversePath
     else:
-        op = operator.add
-        inverse = operator.sub
-    
-    while (NOT collided) AND xGraphLimit[0] <= xLine AND xLine <= xGraphLimit[1]: //xGraphLimit[leftLim, rightLim]
-        jumpLine.move(op(0, nodeDistance), 0)
-        xLine = op(xLine, 1)
-        for wall in walls:
-            if pygame.Rect.colliderect(wall, jumpLine):
-                collided = true
-                jumpLine.move(inverse(0, nodeDistance), 0)
-                xLine = inverse(xLine, 1)
-                break
-    
-    platformFound = [false, null] //[found, node]
-    excludedNodes = []
-
-    if collided:
-        xCircleCenter = lineStart[0] - ((startNode[0] - xLine) * nodeDistance)
-        jumpCircle = pygame.draw.circle(surface=screen, color=(0,0,255), center=(xCircleCenter, lineStart[1]), radius=jumpRadius)
-
-        collisionState = [false, false]
-        collidedWith = null
-        previousState = null
-
-        while circleSightRadius > 0 AND NOT platformFound[0]:
-            chordLength = round(math.sqrt((2 * jumpRadius**2) * (1 - math.cosine(2 * circleSightRadius))))
-            chordLength = chordLength DIV 2
-            chordHeight = round(jumpRadius * math.cosine(circleSightRadius))
-
-            chordEnd = (op(circleCenterx, chordLength), lineStart[1] - chordHeight)
-
-            for wall in walls:
-                if pygame.Rect.collidepoint(wall, chordEnd):
-                    collisionState[1] = true
-                    collidedWith = wall
-                    break
-                else:
-                    collisionState[1] = false
-                    collidedWith = null
-            
-        if collisionState[0] AND NOT collisionState[1]:
-            found = testCollisionChange(previousState, chordEnd, chordHeight, direction)
-            if found:
-                topY = collidedWith.top[1]
-                index = yVertex DIV nodeSeparation
-                nodeIndex = (index, op(xLine, 1))
-                platformFound = [true, nodeIndex]
-        
-        previousChordState = {
-            "chord": chordEnd,
-            "collidedWith": collidedWith,
-            "chordHeight": chordHeight
-        }
-    
-    if NOT (collided OR platformFound[0]):
-        xExclusionOrigin = startNode[0] + 1
-        yExclusionOrigin = startNode[1] - (jumpHeight DIV nodeSeparation)
-        currentNode = [xExclusionOrigin, yExclusionOrigin]
-        while nodeMap[currentNode[1]][currentNode[0]] != "#": //# is the notation for a wall
-            excludedNodes.append(currentNode)
-            currentNode[1] -= 1
-        currentNode = [op(xExclusionOrigin, 1), yExclusionOrigin]
-        while nodeMap[currentNode[1]][currentNode[0]] != "#" AND xGraphLimit[0] <= currentNode[0] AND currentNode[0] <= xGraphLimit[1]:
-            excludedNodes.append(currentNode)
-            currentNode[0] = op(currentNode[0], 1)
-    
-    return [platformFound, excludedNodes]
-
-def testCollisionChange(previousState, pointToTest, currentChordHeight):
-    loweredChord = (pointToTest[0], pointToTest[1] + currentChordHeight - previousState["chordHeight"]) //reminder: + is down in terms of y-coord
-
-    if pygame.Rect.collidepoint(previousState["collidedWith"], loweredChord):
-        return true
-    else:
-        return false
-
-
-///////////////////////////////////////
-//GAPS
-///////////////////////////////////////
-
-def crossGap(
-        screen,
-        walls,
-        path,
-        startNode,
-        endNode,
-        originNodeOffset,
-        nodeSeparation,
-        jumpRadius
-    ):
-    startPoint = (
-        originNodeOffset + startNode[0] * nodeSeparation,
-        originNodeOffset + startNode[1] * nodeSeparation
-    )
-    endPoint = (
-        originNodeOffset + endNode[0] * nodeSeparation,
-        originNodeOffset + endNode[1] * nodeSeparation
-    )
-
-    sightLine = pygame.draw.line(screen, (0, 0, 255), startPoint, endPoint)
-
-    for wall in walls:
-        if wall.clipline(sightLine).length != 0:
-            return [false, path]
-    
-    if math.sqrt((endPoint[0] - startPoint[0])**2 - (endPoint[1] - startPoint[1])**2) <= jumpRadius:
-        path = cropPath(path, startNode, endNode)
-        return [true, path]
-    return [false, path]
-
-def cropPath(path, cropStart, cropEnd):
-    currentIndex = path.index(cropStart) + 1
-    while path[currentIndex] != cropEnd:
-        path.remove(currentIndex)
-    path.insert(currentIndex, "JUMP")
-    return path
-
-//////////////////////////////////
-//POST EXCLUSION CLEANUP
-//////////////////////////////////
-
-def cleansePathingState(dirtyTable, excludedNodes):
-    toClean = new Stack("unlimited")
-    for node in excludedNodes:
-        if node in dirtyTable:
-            toClean.push(node)
-    
-    while NOT toClean.isEmpty():
-        currentNode = toClean.pop()
-        for node in dirtyTable[node]["nextNodes"]:
-            toClean.push(node)
-        del dirtyTable[currentNode]
-    
-    return dirtyTable //now clean
+        return [] // empty (invalid) path
+endfunction //leads to verify in development
