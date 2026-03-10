@@ -18,12 +18,12 @@ procedure mainmenu():
     subtitleText = subtitleFont.render(subtitle) // subtitle => Also hardcoded
 
     buttons = [ // 2 buttons, 'play' and 'exit to desktop' positioned at the bottom left of the screen
-        TextButton(
+        new TextButton(
             //position,
             "Play",
             play() // () not actually called, just for text colouring
         ),
-        TextButton(
+        new TextButton(
             //position + pygame.Vector2(0, 50) => slightly lower button
             "Exit to Desktop",
             exit()
@@ -54,12 +54,12 @@ procedure deathScreen():
     subtitleText = subtitleFont.render("Retry?")
 
     buttons = [
-        TextButton(
+        new TextButton(
             //position,
             "Retry",
             play() // () not actually called, just for text colouring
         ),
-        TextButton(
+        new TextButton(
             //position + pygame.Vector2(0, 50)
             "Exit to Desktop",
             exit()
@@ -78,7 +78,7 @@ procedure characterSelect():
     buttons = []
     for i=0 to allCharacters.length:
         buttons.append(
-            ImageButton(
+            new ImageButton(
                 i, // ID of character from allCharacter dictionary
                 // position
                 // spritePath
