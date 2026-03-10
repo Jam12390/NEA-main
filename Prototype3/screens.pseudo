@@ -1,0 +1,118 @@
+screenDimensions = (1000, 800)
+inMainMenu = True
+inCharacterSelect = False
+inDeathScreen = False
+
+player = None
+
+titleFont = "calibri" // treated as pygame.font.Sysfont
+subtitleFont = "calibri" // lower size than titleText but treated the same
+
+procedure setup():
+    pass // placeholder for setup code
+    // this procedure does things like precompile the pathing graph and populating empty lists
+endprocedure
+
+procedure mainmenu():
+    titleText = titleFont.render(title) // title => Hardcoded from developer
+    subtitleText = subtitleFont.render(subtitle) // subtitle => Also hardcoded
+
+    buttons = [ // 2 buttons, 'play' and 'exit to desktop' positioned at the bottom left of the screen
+        TextButton(
+            //position,
+            "Play",
+            play() // () not actually called, just for text colouring
+        ),
+        TextButton(
+            //position + pygame.Vector2(0, 50) => slightly lower button
+            "Exit to Desktop",
+            exit()
+        )
+    ]
+
+    while inMainMenu:
+        // redraw() for dimmed screen
+        // draw titleText and subtitleText at the top left of the screen (see main menu layout)
+
+        for button in buttons:
+            button.update()
+        endfor
+        // draw all buttons at bottom left as seen in layout
+
+        // check if any button was clicked and run its onClick() function if needed
+    endwhile
+endprocedure
+
+procedure play():
+    inMainMenu = False
+    inCharacterSelect = True
+    setup()
+    characterSelect()
+
+procedure deathScreen():
+    titleText = titleFont.render("You Died")
+    subtitleText = subtitleFont.render("Retry?")
+
+    buttons = [
+        TextButton(
+            //position,
+            "Retry",
+            play() // () not actually called, just for text colouring
+        ),
+        TextButton(
+            //position + pygame.Vector2(0, 50)
+            "Exit to Desktop",
+            exit()
+        )
+    ]
+
+    while inDeathScreen:
+        // do the same here as in main menu but for the death screen layout since they're so similar
+    endwhile
+endprocedure
+
+procedure characterSelect():
+    titleText = titleFont.render(chrTitle) // chrTitle => Hardcoded by developer
+
+    // iterate through allCharacters, adding each as an image button connected to setPlayer(ID)
+    buttons = []
+    for i=0 to allCharacters.length:
+        buttons.append(
+            ImageButton(
+                i, // ID of character from allCharacter dictionary
+                // position
+                // spritePath
+                setPlayer(i),
+                // compile text from allCharacters[ID] details
+                size // set by developer
+            )
+        )
+    endfor
+
+    while inCharacterSelect:
+        // redraw() for dimmed screen and paused game
+
+        for button in buttons:
+            button.update()
+        endfor
+
+        // draw buttons in a list (as seen in layout)
+    endwhile
+endprocedure
+
+procedure setPlayer(ID):
+    player = Player( // using python named attributes since it reduces comments
+        FPS=FPS,
+        jumpForce=allCharacters[ID]["jumpForce"],
+        maxHP=allCharacters[ID]["hp"],
+        ..., // remaining attributes using allCharacters[ID]
+        tags=["player"],
+        pMass=3,
+        position= // starting position on map
+        startingVelocity=pygame.Vector2(0, 0), // starting velocity
+        pVelocityCap= // velocityCap set by developer
+        startingWeaponID=allCharacters[ID]["startingWeapon"]
+    )
+    player.healthBar.resetHP() // ensures HP is set to max
+    inCharacterSelect = False // exit character select
+endprocedure

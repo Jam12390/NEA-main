@@ -606,11 +606,7 @@ def abandonRun():
     inCharacterSelect = True
     paused = False
     setup(mapName=mapName)
-
-
-def openOptions():
-    pass
-
+    
 
 def quit():
     pygame.quit()

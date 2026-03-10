@@ -4,7 +4,6 @@ import typing
 
 pygame.init()
 
-
 class HealthBar(pygame.sprite.Sprite):
     def __init__(self, pSize, position, fontName, maxHP, currentHP):
         super().__init__()
@@ -91,22 +90,22 @@ class TextButton(pygame.sprite.Sprite):
         hoverOffset: pygame.Vector2 = pygame.Vector2(0, 0),
         titleFirst: bool = False
     ):
-        self.font = pygame.font.SysFont(fontName, size=textSize)
+        self.__font = pygame.font.SysFont(fontName, size=textSize)
 
-        self.text = self.font.render(text, False, textColour)
-        self.textRect = pygame.Surface.get_rect(self.text)
+        self.__text = self.__font.render(text, False, textColour)
+        self.__textRect = pygame.Surface.get_rect(self.text)
 
         self.surface = pygame.Surface(
-            self.textRect.size + pygame.Vector2(25, 25)
+            self.__textRect.size + pygame.Vector2(25, 25)
         )  # pygame.Surface((round(size.x), round(size.y)))
         self.surface.fill(buttonColour)
 
-        self.textRect.center = (
+        self.__textRect.center = (
             self.surface.get_width() // 2,
             self.surface.get_height() // 2,
         )
 
-        self.surface.blit(self.text, self.textRect)
+        self.surface.blit(self.__text, self.__textRect)
 
         self.rect = pygame.Surface.get_rect(self.surface)
         self.rect.topleft = (round(position.x), round(position.y))
@@ -147,7 +146,7 @@ class TextButton(pygame.sprite.Sprite):
 
     def update(self, mousePos):
         self.checkForHover(mousePos=mousePos)
-        self.surface.blit(self.text, self.textRect)
+        self.surface.blit(self.__text, self.__textRect)
 
 
 def wrapText(plainText: str, wordsPerLine: int):
@@ -182,16 +181,16 @@ class Description(pygame.sprite.Sprite):
         titleFirst: bool = False
     ):
 
-        self.font = pygame.font.SysFont(font, fontSize)
-        self.titleFont = pygame.font.SysFont(font, fontSize + 10)
+        self.__font = pygame.font.SysFont(font, fontSize)
+        self.__titleFont = pygame.font.SysFont(font, fontSize + 10)
 
         if titleFirst:
-            self.lines = [self.titleFont.render(text[0], True, (0, 0, 0))]
+            self.lines = [self.__titleFont.render(text[0], True, (0, 0, 0))]
             text.pop(0)
         else:
             self.lines = []
         
-        self.lines.extend(self.font.render(line, False, (0, 0, 0)) for line in text)
+        self.lines.extend(self.__font.render(line, False, (0, 0, 0)) for line in text)
 
         self.lineSize = fontSize + 10
 
@@ -218,11 +217,8 @@ class ImageButton(pygame.sprite.Sprite):
         imgPath: str,
         func,
         text: list[str],
-        # textColour: pygame.Color = pygame.Color(0, 0, 0),
         buttonColour: pygame.Color = pygame.Color(175, 175, 175),
         hoverColour: pygame.Color = pygame.Color(60, 60, 60),
-        # fontName: str = "Calibri",
-        # textSize: int = 15,
         hoverOffset: pygame.Vector2 = pygame.Vector2(0, 0),
         size: pygame.Vector2 = pygame.Vector2(200, 100),
         descriptionOffset: pygame.Vector2 = pygame.Vector2(

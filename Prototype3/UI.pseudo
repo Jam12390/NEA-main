@@ -1,0 +1,224 @@
+class HealthBar inherits pygame.sprite.Sprite
+    private __maxHP
+    private __currentHP
+    private __position
+
+    private __remainingBar
+    private __remainingRect
+
+    private __totalBar
+    private __totalRect
+
+    private __textColour
+    private __font
+    private __text
+    private __textRect
+
+    public surface
+    public rect
+
+    public procedure new(size, position, font, maxHP, currentHP, textColour):
+        __maxHP = maxHP
+        __currentHP = maxHP
+        __position = position
+
+        __remainingBar = pygame.Surface(size)
+        __remainingRect = pygame.Surface.get_rect(__remainingBar)
+
+        __totalBar = pygame.Surface(size)
+        __totalRect = pygame.Surface.get_rect(__totalBar)
+
+        __textColour = textColour
+        __font = font
+        __text = str(currentHP) + "/" + str(maxHP) // in reality, this would be pygame.font.render(...) but I'm just using plaintext here
+        __textRect = pygame.Surface.get_rect(__text)
+
+        surface = pygame.Surface(size)
+        rect = pygame.Surface.get_rect(surface)
+    endprocedure
+
+    public procedure changeHP(amount):
+        __currentHP += amount
+        __text = str(currentHP) + "/" + str(maxHP)
+        remainingBarWidth = __totalRect.width * (__currentHP / __maxHP)
+        remainingBarWidth = round(remainingBarWidth)
+        __remainingBar = pygame.Surface() // would use remainingBarWidth and the height set in new()
+        __remainingRect = pygame.Surface.get_rect(__remainingBar)
+    endprocedure
+
+    public procedure resetHP():
+        __currentHP = __maxHP
+        __text = str(currentHP) + "/" + str(maxHP)
+        remainingBarWidth = __totalRect.width
+        __remainingBar = pygame.Surface() // would use remainingBarWidth and the height set in new()
+        __remainingRect = pygame.Surface.get_rect(__remainingBar)
+    endprocedure
+
+    public procedure getText():
+        pass // uses too many python specific functions. Re-renders text
+    endprocedure
+
+    public function isDead():
+        return __currentHP <= 0
+    endfunction
+
+    public procedure update():
+        getText()
+        pass // drawing text, remainingBar and totalBar onto surface
+    endprocedure
+endclass
+
+class TextButton inherits pygame.sprite.Sprite
+    private __font
+
+    private __text
+    private __textRect
+
+    public surface
+    public rect
+
+    public colour
+    public hoveredOver
+    public hoverColour
+    public hoverOffset
+    public onClick
+
+    public description
+
+    public procedure new(
+        position,
+        text,
+        func,
+        descriptionText="",
+        descriptionOffset=pygame.Vector2(0,0),
+        absoluteDescriptionPosition=None,
+        textColour=pygame.Color(0,0,0),
+        buttonColour=pygame.Color(175,175,175),
+        pHoverColour=pygame.Color(60,60,60),
+        fontName="calibri",
+        textSize,
+        pHoverOffset=pygame.Vector2(0,0),
+        titleFirst=False
+    ):
+        __font = fontName
+
+        __text = text // should be rendered text
+        __textRect = pygame.Surface.get_rect(__text)
+
+        surface = pygame.Surface() // size goes here during development
+
+        colour = buttonColour
+        hoveredOver = False,
+        hoverColour = pHoverColour
+        hoverOffset = pHoverOffset
+        onClick = func
+
+        // draw text onto surface
+
+        rect = pygame.Surface.get_rect(surface)
+
+        if absoluteDescriptionPosition == None AND descriptionText != "" then
+            description = Description(position + descriptionOffset, descriptionText, fontName)
+        elseif descriptionText != "" then
+            description = Description(absoluteDescriptionPosition, descriptionText, fontName)
+        else
+            description = None
+        endif
+    endprocedure
+
+    public procedure checkForHover():
+        pass // use previous hover logic in Button
+    endprocedure
+
+    public procedure update():
+        checkForHover()
+        pass // redraw
+    endprocedure
+endclass
+
+function wrapText(unwrappedText):
+    pass // placeholder for wrappedText
+
+class Description inherits pygame.sprite.Sprite
+    private __font
+    private __titleFont
+
+    public lines
+
+    public background
+    public rect
+
+    public procedure new(position, text, font="calibri", backgroundColour=pygame.Color(175,175,175)):
+        __font = font
+        __titleFont = font // but with different size
+
+        lines = wrapText(text)
+
+        background = pygame.Surface() // insert size here (likely from lines)
+        background.fill(backgroundColour)
+        rect = pygame.Surface.get_rect(background)
+    endprocedure
+endclass
+
+class ImageButton inherits pygame.sprite.Sprite
+    public data
+
+    public image
+    public surface
+    public rect
+
+    public colour
+    public hoveredOver
+    public hoverColour
+    public hoverOffset
+    public onClick
+
+    public description
+
+    public procedure new(
+        pData=None,
+        position,
+        imgPath,
+        func,
+        text,
+        buttonColour=pygame.Color(175,175,175),
+        pHoverColour=pygame.Color(60,60,60),
+        pHoverOffset=pygame.Vector2(0,0),
+        size,
+        descriptionOffset=pygame.Vector2(0,0),
+        absoluteDescriptionPosition=None,
+        titleFirst=False
+    ):
+        data = pData
+
+        image = // load sprite from imgPath
+        surface = pygame.Surface(size)
+
+        //draw image onto surface
+
+        rect = pygame.Surface.get_rect(surface)
+        rect.center = position
+
+        hoveredOver = False
+        hoverColour = pHoverColour
+        hoverOffset = pHoverOffset
+
+        colour = buttonColour
+        onClick = func
+
+        if absoluteDescriptionPosition == None then
+            description = Description(position + descriptionOffset, text)
+        else:
+            description = Description(absoluteDescriptionPosition, text)
+        endif
+    endprocedure
+
+    public procedure checkForHover():
+        pass // use logic from previous prototypes
+    endprocedure
+
+    public procedure update():
+        checkForHover()
+        pass // redraw (mostly the same as TextButton)
+    endprocedure
+endclass

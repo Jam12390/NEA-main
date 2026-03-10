@@ -288,18 +288,18 @@ class Enemy(Entity):
             pIgnoreYFriction,
             screenDimensions=screenDimensions
         )
-        self.aggroRange = pAggroRange
-        self.aggrod = False
-        self.seen = False
-        self.weapon = Weapon(
+        self.__aggroRange = pAggroRange
+        self.__aggrod = False
+        self.__seen = False
+        self.__weapon = Weapon(
             FPS=FPS,
             pID=weaponID,
             startingPosition=pygame.Vector2(
                 round(self.rect.centerx), round(self.rect.centery)
             ),
         )
-        self.framesSinceLastPath = 0
-        self.framesSinceLastSight = 0
+        self.__framesSinceLastPath = 0
+        self.__framesSinceLastSight = 0
 
         self.currentNode = (
             int((self.absoluteCoordinate.x) // 75),
@@ -307,7 +307,7 @@ class Enemy(Entity):
         )
 
         self.sightRect = pygame.Rect(
-            self.rect.centerx, self.rect.centery, pAggroRange * 2, 10
+            self.rect.centerx, self.rect.centery, self.__aggroRange * 2, 10
         )
 
         self.facing = pFacing
@@ -321,34 +321,32 @@ class Enemy(Entity):
         target,
         playerRect,
     ):
-        self.framesSinceLastPath += 1
-        #self.simulated = self.currentNode[1] in range(
-        #    int(pathingTo[1] - 10), int(pathingTo[1] + 10)
-        #)
+        self.__framesSinceLastPath += 1
+        
         if self.simulated:
-            self.seen = pygame.Rect.colliderect(self.sightRect, playerRect)
+            self.__seen = pygame.Rect.colliderect(self.sightRect, playerRect)
 
-            if not self.seen:
-                self.framesSinceLastSight += 1
+            if not self.__seen:
+                self.__framesSinceLastSight += 1
             else:
-                self.aggrod = True
-                self.framesSinceLastSight = 0
-            if self.framesSinceLastSight > 180:  # 3 secs
-                self.aggrod = False
+                self.__aggrod = True
+                self.__framesSinceLastSight = 0
+            if self.__framesSinceLastSight > 180:  # 3 secs
+                self.__aggrod = False
 
 
-            self.shouldPath = self.aggrod
+            self.shouldPath = self.__aggrod
 
-            if self.framesSinceLastPath > 0:# and self.aggrod:  #
+            if self.__framesSinceLastPath > 0:# and self.aggrod:  #
                 self.path(
                     target=target,
                     precompiledData=precompiledData,
                     nodeMap=nodeMap,
                     nodeSep=nodeSep,
                 )
-                self.framesSinceLastPath = 0
+                self.__framesSinceLastPath = 0
 
-            if not self.aggrod:
+            if not self.__aggrod:
                 self.removeForce(axis="x", ref="closePath")
                 self.removeForce(axis="x", ref="xPathing")
 
@@ -376,6 +374,6 @@ class Enemy(Entity):
                 int(((self.absoluteCoordinate.x) // 75)),
             )
         else:
-            self.framesSinceLastSight += 1
+            self.__framesSinceLastSight += 1
             self.shouldPath = False
             self.currentPath = []
