@@ -93,7 +93,7 @@ class TextButton(pygame.sprite.Sprite):
         self.__font = pygame.font.SysFont(fontName, size=textSize)
 
         self.__text = self.__font.render(text, False, textColour)
-        self.__textRect = pygame.Surface.get_rect(self.text)
+        self.__textRect = pygame.Surface.get_rect(self.__text)
 
         self.surface = pygame.Surface(
             self.__textRect.size + pygame.Vector2(25, 25)

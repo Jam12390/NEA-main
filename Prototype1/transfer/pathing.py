@@ -11,6 +11,7 @@ except:
 from typing import Optional, Union
 
 
+# Unlimited length stack
 class Stack:
     def __init__(self) -> None:
         self.__data = []
@@ -34,7 +35,7 @@ class TopDownNode:
     def __init__(self, coord, previousNode, end, shortestDistance) -> None:
         self.coord = coord
         self.shortestDistance = shortestDistance
-        self.heuristic = getHeuristic(start=coord, end=end)
+        self.HEURISTIC = getHeuristic(start=coord, end=end)
         self.previousNode = previousNode
         self.nextNodes = []
         self.visited = False
@@ -58,7 +59,9 @@ def getHeuristic(start, end, axis: Optional[str] = None) -> float:
 def getAdjacentNodes(
     graph,
     node,
-    directionalGraph: Optional[list[tuple[Union[tuple[int, int], str], ...]]] # nullable [ ( (y1, x1), "<->", (y2, x2) ) ]
+    directionalGraph: Optional[
+        list[tuple[Union[tuple[int, int], str], ...]]
+    ],  # nullable [ ( (y1, x1), "<->", (y2, x2) ) ]
 ):
     if directionalGraph != None:
         useDirections = True
@@ -108,7 +111,7 @@ def getAdjacentNodes(
 
 
 def getNextNodeToVisit(nodes: list[TopDownNode]) -> int:
-    nodes.sort(key=lambda node: node.shortestDistance + node.heuristic)
+    nodes.sort(key=lambda node: node.shortestDistance + node.HEURISTIC)
     index = 0
     while nodes[min(len(nodes) - 1, index)].visited and index < len(nodes):
         index += 1
@@ -165,13 +168,11 @@ def getTopDownPath(
                 nodes=nodes, start=nodes[0], preferDirection=preferDirection
             )
         if currentNodeIndex == -1:
-            nodes.sort(key=lambda x: x.heuristic)
+            nodes.sort(key=lambda x: x.HEURISTIC)
             return []
         currentNode = nodes[currentNodeIndex]
         adjacentNodes = getAdjacentNodes(
-            graph=graph,
-            node=currentNode,
-            directionalGraph=directionalGraph
+            graph=graph, node=currentNode, directionalGraph=directionalGraph
         )
         for node in adjacentNodes:
             index = getNodeFromCoord(nodes=nodes, coord=node)
@@ -229,7 +230,9 @@ def flattenPath(nodeMap, path):
     flattenedPath = []
     for node in path:
         currentCo = list(node)
-        while nodeMap[min(len(nodeMap), int(currentCo[0] + 1))][int(currentCo[1])] == " " and currentCo[0] < len(nodeMap):
+        while nodeMap[min(len(nodeMap), int(currentCo[0] + 1))][
+            int(currentCo[1])
+        ] == " " and currentCo[0] < len(nodeMap):
             currentCo[0] += 1
         flattenedPath.append(tuple(currentCo))
     return flattenedPath
@@ -335,12 +338,13 @@ def pathfind(
                 flattenPath(
                     nodeMap=nodeMap,
                     path=getTopDownPath(
-                    graph=graph,
-                    start=nearestEndWaypoint,
-                    end=end.getCoord(),
-                    tolerance=tolerance,
-                    directionalGraph=None,
-                ))
+                        graph=graph,
+                        start=nearestEndWaypoint,
+                        end=end.getCoord(),
+                        tolerance=tolerance,
+                        directionalGraph=None,
+                    ),
+                )
             )
         else:
             reversed = list(tuple(flattenedPath))
@@ -455,9 +459,8 @@ def main(
     # awaypoints = precompiledData["waypointData"]["debug"]
     disconnectedWaypoints = precompiledData["waypointData"]["disconnectedWaypoints"]
 
-
     try:
-        #start = findFreeNode(nodeMap=nodeMap, start=start)
+        # start = findFreeNode(nodeMap=nodeMap, start=start)
 
         end = findFreeNode(nodeMap=nodeMap, start=end)
         # print(f"end - {end}")

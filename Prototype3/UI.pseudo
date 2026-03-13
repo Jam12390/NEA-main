@@ -95,7 +95,7 @@ class TextButton inherits pygame.sprite.Sprite
         textColour=pygame.Color(0,0,0),
         buttonColour=pygame.Color(175,175,175),
         pHoverColour=pygame.Color(60,60,60),
-        fontName="calibri",
+        fontName="Calibri",
         textSize,
         pHoverOffset=pygame.Vector2(0,0),
         titleFirst=False
@@ -148,7 +148,7 @@ class Description inherits pygame.sprite.Sprite
     public background
     public rect
 
-    public procedure new(position, text, font="calibri", backgroundColour=pygame.Color(175,175,175)):
+    public procedure new(position, text, font="Calibri", backgroundColour=pygame.Color(175,175,175)):
         __font = font
         __titleFont = font // but with different size
 

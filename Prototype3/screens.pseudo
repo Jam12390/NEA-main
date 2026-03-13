@@ -5,8 +5,8 @@ inDeathScreen = False
 
 player = None
 
-titleFont = "calibri" // treated as pygame.font.Sysfont
-subtitleFont = "calibri" // lower size than titleText but treated the same
+titleFont = "Calibri" // treated as pygame.font.Sysfont
+subtitleFont = "Calibri" // lower size than titleText but treated the same
 
 procedure setup():
     pass // placeholder for setup code

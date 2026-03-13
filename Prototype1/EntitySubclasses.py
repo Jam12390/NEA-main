@@ -291,7 +291,7 @@ class Enemy(Entity):
         self.__aggroRange = pAggroRange
         self.__aggrod = False
         self.__seen = False
-        self.__weapon = Weapon(
+        self.weapon = Weapon(
             FPS=FPS,
             pID=weaponID,
             startingPosition=pygame.Vector2(
