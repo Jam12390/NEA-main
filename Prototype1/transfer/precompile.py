@@ -823,17 +823,20 @@ def loadMap(fileName: str, invalidKeys) -> list[list[str]]:
         testGraph = []
         for row in segmentedData:
             # testGraph.append([" " if x == "-1" or x == "5" or x == "6" else "#" for x in row])
-            testGraph.append([" " if int(x) in invalidKeys else "#" for x in row])
+            try:
+                testGraph.append([" " if int(x) in invalidKeys else "#" for x in row])
+            except:
+                pass
         return testGraph
 
 
 def main(map: str, origin: tuple[int, int]):
-    testGraph = loadMap(fileName=map)  # (7, 6)
+    testGraph = loadMap(fileName=map, invalidKeys=[5, 6, 2, -1])  # (7, 6)
 
     gravityAccel = 9.81 * 15
     nodeSep = 15
 
-    enemyData = {"jumpForce": 100, "maxSpeed": (100, 37.5)}
+    enemyData = {"jumpForce": 125, "maxSpeed": (100, 37.5)}
 
     response = precompileGraph(
         nodeMap=testGraph,
@@ -868,9 +871,9 @@ def outputTestGraph(fileName: str) -> None:
 
 
 # t = time.time()
-# mapName = "Prototype1/transfer/Maps/1.csv"
-# origin = (16, 0)
-##main(map=mapName, origin=origin)
-# outputTestGraph(fileName=mapName)
+mapName = "Prototype1/transfer/Maps/a.csv"
+origin = (6, 0)
+main(map=mapName, origin=origin)
+#outputTestGraph(fileName=mapName)
 # e = time.time()
 # print(e - t)

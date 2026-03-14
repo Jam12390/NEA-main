@@ -205,7 +205,7 @@ class Entity(PhysicsObject):
                 start=self.currentNode,
                 end=pathingTo,
                 jumpForce=self._jumpForce,
-                maxXSpeed=self._velocityCap.x,
+                #maxXSpeed=self._velocityCap.x,
                 gravity=gravity,
             )
 
