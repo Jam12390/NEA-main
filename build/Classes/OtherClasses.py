@@ -1,6 +1,9 @@
 import pygame
 
-from ..Other.dictionaries import allWeapons, allItems
+try:
+    from ..Other.dictionaries import allWeapons, allItems
+except:
+    from Other.dictionaries import allWeapons, allItems
 
 
 class Weapon(pygame.sprite.Sprite):

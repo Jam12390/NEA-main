@@ -1,5 +1,10 @@
 import pygame
-from ..Pathing import pathing
+
+try:
+    from ..Pathing import pathing
+except:
+    from Pathing import pathing
+
 import typing
 
 pygame.init()
@@ -157,13 +162,12 @@ class TextButton(pygame.sprite.Sprite):
             int(self.rect.bottom + self.hoverOffset.y),
         )
 
-        # If so,
         if inRangeX and inRangeY:
-            # Set hoveredOver to true and fill self with hoverColour
+            # Sets hoveredOver to true and fill self with hoverColour
             self.hoveredOver = True
             self.surface.fill(self.hoverColour)
         else:
-            # Otherwise reset the button's state
+            # Otherwise resets the button's state
             self.hoveredOver = False
             self.surface.fill(self.colour)
 
@@ -203,18 +207,17 @@ class Description(pygame.sprite.Sprite):
         fontSize=20,
         yOffset: int = 75,
         backgroundColour: pygame.Color = pygame.Color(175, 175, 175),
-        titleFirst: bool = False # titleFirst is a parameter which says if the first line in text is meant to be a title
+        titleFirst: bool = False # A parameter which says if the first line in text is meant to be a title
     ):
 
         # Fonts
         self.__font = pygame.font.SysFont(font, fontSize)
-        self.__titleFont = pygame.font.SysFont(font, fontSize + 10) # And is used when checking if titleFont should be used
+        self.__titleFont = pygame.font.SysFont(font, fontSize + 10) # and is used when checking if titleFont should be used
 
-        # If a title comes first,
         if titleFirst:
-            # Render the first line in lines using titleFont
+            # Renders the first line in lines using titleFont
             self.lines = [self.__titleFont.render(text[0], True, (0, 0, 0))]
-            text.pop(0) # Then remove it
+            text.pop(0) # Then removes it
         else:
             self.lines = [] # Otherwise initialise lines as an empty list
         

@@ -266,6 +266,7 @@ class Entity(PhysicsObject):
                 yDir = "u" if yNodeDiff > 0 else "d"
                 # if (not self.containsForce(axis="x", ref="xPathing")) and xNodeDiff != 0:
                 # print(f"added xPathing")
+                if self.is
                 self.addForce(axis="x", direction=xDir, ref="xPathing", magnitude=1000)
                 if xNodeDiff == 0:
                     self.removeForce(axis="x", ref="xPathing")

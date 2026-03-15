@@ -1,4 +1,8 @@
-import suvat
+try:
+    import suvat
+except:
+    import Pathing.suvat as suvat
+
 import csv
 
 class Point:
@@ -491,7 +495,7 @@ def traverseFloor(
                     previousCollisionStates = list(tuple(currentCollisionStates)) # Move currentCollisionState to previousCollisionState
                     currentCollisionStates = [False, False] # And reset currentCollisionState
 
-                    stepUp += 1  # Keep at end (goes to next row)
+                    stepUp += 1  # To next row
                     current.setY(newY=current.y() - 1)
 
             current.setCoord(newX=next.x(), newY=next.y())
@@ -502,14 +506,6 @@ def traverseFloor(
         current = Point(x=origin.x(), y=origin.y(), nodeMap=nodeMap) # And reset to origin
         next = Point(x=origin.x(), y=origin.y(), nodeMap=nodeMap)
 
-    #return {
-    #    "nodes": list[Point](foundNodes),
-    #    "corners": list[tuple[Point, str]](corners),
-    #    "newFloors": list[Point](newFloors),
-    #    "waypoints": list[tuple[tuple[int, int], str, tuple[int, int]]](
-    #        waypoints
-    #    ),  # => ( (y1, x1), "->", (y2, x2) )
-    #}
     return FloorResponse(
         nodes=foundNodes,
         corners=corners,
@@ -566,7 +562,7 @@ def connectAdjacentWaypoints(
                 if group[index][1] == group[index + 1][1] - 1: # If the current waypoint is adjacent to the next waypoint
                     waypoints.append((group[index], "<->", group[index + 1]))
                 elif not attemptGroundTraversal(
-                    start=group[index], end=group[index + 1], nodeMap=nodeMap # Checks if coordinate A can't reach B without jumping
+                    start=group[index], end=group[index + 1], nodeMap=nodeMap # Checks if A can't reach B without jumping
                 ):
                     cornerIndexes.append(max(1, index)) # If so, mark it as a corner
                     ignoreNextConditions = True # // After a corner, the next node will always be a corner
@@ -735,10 +731,6 @@ def precompileGraph(
         corners = []
         floors = list(tuple(newFloors)) # floors now becomes newFloors
 
-    #return {
-    #    "nodes": allNodes,
-    #    "waypointData": compileWaypointData(waypoints=waypoints, nodeMap=nodeMap),
-    #}
     return PrecompileResponse(
         nodes=allNodes,
         waypointData=compileWaypointData(waypoints=waypoints, nodeMap=nodeMap)
@@ -773,35 +765,6 @@ def queryWaypoints(
     return foundWaypoints
 
 
-#def queryCompressed(waypoints, compressedWaypoint):
-#    foundWaypoints = []
-#    start = compressedWaypoint[0][1]
-#    end = compressedWaypoint[2][1]
-#    for xCoord in range(start, end + 1):
-#        response = queryWaypoints(
-#            waypoints=waypoints,
-#            query=(compressedWaypoint[0][0], xCoord),
-#            ignoreCompressed=True,
-#        )
-#        for x in response:
-#            if (
-#                x[0] == (compressedWaypoint[0][0], xCoord)
-#                and not x in foundWaypoints
-#                and not x[1] == "-"
-#            ):
-#                foundWaypoints.append(x)
-#    return foundWaypoints
-#
-#
-#def checkCompressed(query, waypoint):
-#    return (
-#        waypoint[0][0] == query[0]
-#        and waypoint[2][0] == query[0]
-#        and waypoint[0][1] <= query[1]
-#        and query[1] <= waypoint[2][1]
-#    )
-
-
 # // Queries an x or y coordinate in disconnectedWaypoints
 def queryDisconnectedWaypoints(
     disconnectedWaypoints: list[tuple[int, int]], x: int = 0, y: int = 0
@@ -820,39 +783,6 @@ def checkForDuplicates(waypoints):
         if len(ls) > 1:
             found.extend(ls)
     return found # Duplicate waypoints
-
-
-#def compressWaypoints(
-#    waypoints: list,
-#    disconnectedWaypoints: list[tuple[int, int]],
-#    nodeMap: list[list[str]],
-#):
-#    waypointsByY = [] # Groups of waypoints organised by their y coordinate
-#    for yCoord in range(0, len(nodeMap)):
-#        waypointsByY.append(
-#            queryDisconnectedWaypoints( # Groups waypoints by their y coordinate
-#                disconnectedWaypoints=disconnectedWaypoints, y=yCoord
-#            )
-#        )
-#    for groupIndex in range(0, len(waypointsByY)):
-#        waypointsByY[groupIndex].sort(key=lambda x: x[1])
-#        index = 0
-#        lEdge = None
-#        rEdge = None
-#        while index <= len(waypointsByY[groupIndex]) - 1:
-#            rEdge = waypointsByY[groupIndex][index]
-#            if lEdge == None:
-#                lEdge = waypointsByY[groupIndex][index]
-#            elif not attemptGroundTraversal(
-#                start=lEdge, end=rEdge, nodeMap=nodeMap  # (proposed)
-#            ):
-#                rEdge = waypointsByY[groupIndex][index - 1]
-#                waypoints.append((lEdge, "-", rEdge))
-#                lEdge = waypointsByY[groupIndex][index]
-#            index += 1
-#        if lEdge != None:
-#            waypoints.append((lEdge, "-", rEdge))
-#    return removeDuplicateWaypoints(waypoints=waypoints)
 
 
 def compileWaypointData(
@@ -961,12 +891,3 @@ def outputTestGraph(fileName: str) -> None:
     for row in data:
         print(row)
     pass
-
-
-# t = time.time()
-#mapName = "Prototype1/transfer/Maps/a.csv"
-#origin = (6, 0)
-#main(map=mapName, origin=origin)
-#outputTestGraph(fileName=mapName)
-# e = time.time()
-# print(e - t)

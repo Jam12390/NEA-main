@@ -1,10 +1,13 @@
 import math
-import time
 
-from suvat import *
-import precompile
+try:
+    from suvat import *
+    import precompile
+except:
+    from Pathing.suvat import *
+    import Pathing.precompile as precompile
+
 from typing import Optional, Union
-
 
 # Unlimited length stack
 class Stack:
@@ -28,7 +31,7 @@ class Stack:
 
 class TopDownNode:
     def __init__(self, coord, previousNode, end, shortestDistance) -> None:
-        self.coord = coord
+        self.coord = coord # (y, x)
         self.shortestDistance = shortestDistance
         self.HEURISTIC = getHeuristic(start=coord, end=end)
         self.previousNode = previousNode
@@ -94,7 +97,7 @@ def getAdjacentNodes(
             elif not node.coord in potentialPath:
                 adjacentNodes.append(potentialPath[0])
     else:
-        # // This is a list of tuple[bool, coord] in the form presence => [left, right, up, down]
+        # // This is a list of tuple[bool, coord] in the form: presence => [left, right, up, down]
         presence = [  # (Exists, coord)
             (
                 (node.coord[0], node.coord[1] - 1) in graph,
@@ -160,7 +163,6 @@ def getTopDownPath(
     directionalGraph: Optional[
         list[tuple[tuple[int, int], str, tuple[int, int]]] # // directionalGraph => [((y, x), "->", (y2, x2))] | None
     ] = None, # // Defaults to None so directionalGraph=None doesn't have to be passed each time getTopDownPath is called
-    preferDirection: Optional[str] = None
 ) -> list[tuple[int, int]]: # => [(y1, x1), (y2, x2), ...]
 
     # // Same reasons as getAdjacentNodes()
@@ -243,7 +245,7 @@ def getTopDownPath(
 # // a quadratic with a high n
 def flattenPath(nodeMap, path):
     flattenedPath = []
-    for node in path: # Iterate through the path
+    for node in path:
         currentCo = list(node)
         # While the lower node isn't a wall
         while nodeMap[min(len(nodeMap), int(currentCo[0] + 1))][
@@ -276,7 +278,7 @@ def pathfind(
         start = precompile.getLowerNodes(
             topNodes=[precompile.Point(x=start[1], y=start[0], nodeMap=nodeMap)],
             nodeMap=nodeMap,
-        ).FLOORNODES[0] # Both the start and the end nodes should begin on the ground
+        ).FLOORNODES[0] # Both the start and end nodes should begin on the ground
     except:
         pass
 
@@ -300,9 +302,9 @@ def pathfind(
         flattenedPath = flattenPath(nodeMap, absolutePath)
         nearestStartWaypoint = None
         nearestEndWaypoint = None
-        for node in flattenedPath: # Iterate through the path
+        for node in flattenedPath:
             if node in disconnectedWaypoints and nearestStartWaypoint == None:
-                # And find the nearest node which is disconnectedWaypoints
+                # Find the nearest node which is disconnectedWaypoints
                 nearestStartWaypoint = node
                 break # Exit the loop early to save time
         flattenedPath.reverse()
@@ -339,38 +341,32 @@ def pathfind(
                 startWaypoint = (int(startWaypoint[0]), int(startWaypoint[1]))
                 endWaypoint = waypointPath[nodeIndex + 1]
                 endWaypoint = (int(endWaypoint[0]), int(endWaypoint[1]))
-                if abs(startWaypoint[1] - endWaypoint[1]) > 0:
-                    # // Adding a diagonal node to the path is a simple way to indicate a jump
+                    
+                absolutePath = getTopDownPath(
+                    graph=graph,
+                    start=startWaypoint,
+                    end=endWaypoint
+                )
+
+                # Take the lowest path whenever possible
+                flattenedAbsolutePath = flattenPath(nodeMap=nodeMap, path=absolutePath)
+                requiresJump = not checkGroundPathValidity(
+                    flattenedPath=flattenedAbsolutePath,
+                )
+
+                # However extend the path using absolutePath if necessary
+                # // This could be removed to improve performance, however its current impact is negligible
+                if requiresJump and abs(endWaypoint[1] - startWaypoint[1]) > 2:
+                    # // Adding a diagonal node to the path is a simple way to indicate a jump since the enemy only jumps with its max power
+                    finalPath.append(startWaypoint)
                     if endWaypoint[1] - startWaypoint[1] > 0 and nodeMap[startWaypoint[0] - 1][startWaypoint[1] + 1] != "#": # Going right and the top right adjacent node is free
                         finalPath.append((startWaypoint[0] - 1, startWaypoint[1] + 1))
                     elif endWaypoint[1] - startWaypoint[1] < 0 and nodeMap[startWaypoint[0] - 1][startWaypoint[1] - 1] != "#": # Going left and the top left adjacent node is free
-                        finalPath.append((startWaypoint[0] - 1, startWaypoint[1] - 1))
+                        finalPath.append(tuple((startWaypoint[0] - 1, startWaypoint[1] - 1)))
+                elif requiresJump:
+                    finalPath.extend(absolutePath)
                 else:
-                    absolutePath = getTopDownPath(
-                        graph=graph,
-                        start=startWaypoint,
-                        end=endWaypoint
-                    )
-
-                    # Take the lowest path whenever possible
-                    flattenedAbsolutePath = flattenPath(nodeMap=nodeMap, path=absolutePath)
-                    requiresJump = not checkGroundPathValidity(
-                        flattenedPath=flattenedAbsolutePath,
-                    )
-
-                    # However extend the path using absolutePath if necessary
-                    # // This could be removed to improve performance, however its current impact is negligible
-                    if requiresJump and abs(endWaypoint[1] - startWaypoint[1]) > 2:
-                        # // Adding a diagonal node to the path is a simple way to indicate a jump since the enemy only jumps with its max power
-                        finalPath.append(startWaypoint)
-                        if endWaypoint[1] - startWaypoint[1] > 0 and nodeMap[startWaypoint[0] - 1][startWaypoint[1] + 1] != "#": # Going right and the top right adjacent node is free
-                            finalPath.append((startWaypoint[0] - 1, startWaypoint[1] + 1))
-                        elif endWaypoint[1] - startWaypoint[1] < 0 and nodeMap[startWaypoint[0] - 1][startWaypoint[1] - 1] != "#": # Going left and the top left adjacent node is free
-                            finalPath.append(tuple((startWaypoint[0] - 1, startWaypoint[1] - 1)))
-                    elif requiresJump:
-                        finalPath.extend(absolutePath)
-                    else:
-                        finalPath.extend(flattenedAbsolutePath)
+                    finalPath.extend(flattenedAbsolutePath)
             finalPath.extend(
                 flattenPath(
                     nodeMap=nodeMap,
@@ -483,7 +479,6 @@ def findFreeNode(nodeMap, start: tuple[int, int]): # (y, x)
         return (start[0] + 1, start[1])
     else:
         raise Exception("No free node was found.") # Triggers the try: except: in main() to return []
-        #return tuple(start)
 
 
 #def shortenPath(path):
@@ -512,7 +507,7 @@ def shortenPath(path):
 def main(
     start: tuple[int, int], # (y, x)
     end: tuple[int, int], # (y, x)
-    precompiledData: precompile.PrecompileResponse, # Dictionary containing metadata about the graph from precompile
+    precompiledData: precompile.PrecompileResponse, # Class containing metadata about the graph from precompile
     nodeMap: list[list[str]], # 2D list of which coordinates are walls
     nodeSep: int,
     jumpForce: float,
@@ -520,10 +515,6 @@ def main(
 ):
 
     # Organising precompiledData
-    #graph = precompiledData["nodes"]
-#
-    #waypoints = precompiledData["waypointData"]["waypoints"]
-    #disconnectedWaypoints = precompiledData["waypointData"]["disconnectedWaypoints"]
     graph = precompiledData.NODES
     waypoints = precompiledData.WAYPOINTDATA.WAYPOINTS
     disconnectedWaypoints = precompiledData.WAYPOINTDATA.DISCONNECTEDWAYPOINTS
@@ -540,7 +531,7 @@ def main(
                 precompile.Point(x=end[1], y=end[0], nodeMap=nodeMap),
             ],
             nodeMap=nodeMap,
-        ).FLOORNODES[0].getCoord() # And that end has a floor node to travel to
+        ).FLOORNODES[0].getCoord() # and that end has a floor node to travel to
     except:
         return [] # Otherwise return []
 
@@ -565,50 +556,36 @@ def main(
     return path
 
 
-# startTestSet = [
-#    (29, 80),
-#    (14, 0),
-#    (18, 38),
-#    (18, 38)
-# ]
-# endTestSet = [
-#    (18, 38),
-#    (29, 0),
-#    (18, 41),
-#    (20, 5)
-# ]
+#testGraph = precompile.loadMap(fileName="Prototype1/transfer/Maps/a.csv", invalidKeys=[5, 6, 2, -1])
+#gravityAccel = 9.81 * 15
+#nodeSep = 15
+#enemyData = {
+#   "jumpForce": 125,
+#   "maxSpeed": (100, 50)
+#}
+#response = precompile.precompileGraph(
+#   nodeMap=testGraph,
+#   nodeSep=nodeSep,
+#   gravity=gravityAccel,
+#   enemyData=enemyData,
+#   origin=(6, 0)
+#)
+#debug = True
+#t = time.time()
 #
-
-testGraph = precompile.loadMap(fileName="Prototype1/transfer/Maps/a.csv", invalidKeys=[5, 6, 2, -1])
-gravityAccel = 9.81 * 15
-nodeSep = 15
-enemyData = {
-   "jumpForce": 125,
-   "maxSpeed": (100, 50)
-}
-response = precompile.precompileGraph(
-   nodeMap=testGraph,
-   nodeSep=nodeSep,
-   gravity=gravityAccel,
-   enemyData=enemyData,
-   origin=(6, 0)
-)
-debug = True
-t = time.time()
-
-if debug:
-    a = main(
-        start=(6, 0),
-        end=(2, 5),
-        precompiledData=response,
-        nodeMap=testGraph,
-        nodeSep=nodeSep,
-        jumpForce=enemyData["jumpForce"],
-        gravity=gravityAccel
-    )
-    for x in a:
-       testGraph[x[0]][x[1]] = "x"
-    for x in testGraph:
-        print(x)
-e = time.time()
-print(e - t)
+#if debug:
+#    a = main(
+#        start=(6, 0),
+#        end=(2, 5),
+#        precompiledData=response,
+#        nodeMap=testGraph,
+#        nodeSep=nodeSep,
+#        jumpForce=enemyData["jumpForce"],
+#        gravity=gravityAccel
+#    )
+#    for x in a:
+#       testGraph[x[0]][x[1]] = "x"
+#    for x in testGraph:
+#        print(x)
+#e = time.time()
+#print(e - t)

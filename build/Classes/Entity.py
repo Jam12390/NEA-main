@@ -1,9 +1,14 @@
 import pygame
 import operator
-from PhysicsObject import PhysicsObject
-from ..Other.dictionaries import allEffects
 
-from ..Pathing import pathing
+try:
+    from PhysicsObject import PhysicsObject
+    from ..Other.dictionaries import allEffects
+    from ..Pathing import pathing
+except:
+    from Classes.PhysicsObject import PhysicsObject
+    from Other.dictionaries import allEffects
+    from Pathing import pathing
 
 operators = {
     "+": operator.add,
@@ -43,8 +48,7 @@ class Entity(PhysicsObject):
             startingPosition=startingPosition,
             startingVelocity=startingVelocity,
             pVelocityCap=pVelocityCap,
-            pIgnoreYFriction=pIgnoreYFriction,
-            screenDimensions=screenDimensions,
+            pIgnoreYFriction=pIgnoreYFriction
         )
         self.isGrounded = False
         self._jumpForce = jumpForce
@@ -229,7 +233,7 @@ class Entity(PhysicsObject):
             pass
         if len(self.currentPath) > 0:
 
-            if self.currentNode in self.currentPath:
+            if self.currentNode in self.currentPath and self.isGrounded:
 
                 index = self.currentPath.index(self.currentNode)
                 for x in range(0, index + 1):
@@ -265,6 +269,7 @@ class Entity(PhysicsObject):
                 yDir = "u" if yNodeDiff > 0 else "d"
                 # if (not self.containsForce(axis="x", ref="xPathing")) and xNodeDiff != 0:
                 # print(f"added xPathing")
+                #if self.isGrounded or (self._velocity.x < 0 and xDir == "l") or (self._velocity.x > 0 and xDir == "r"):
                 self.addForce(axis="x", direction=xDir, ref="xPathing", magnitude=1000)
                 if xNodeDiff == 0:
                     self.removeForce(axis="x", ref="xPathing")

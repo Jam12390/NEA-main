@@ -1,8 +1,14 @@
 import pygame
-from Entity import Entity
-from OtherClasses import Weapon
-from ..Other.dictionaries import allItems
-import UI
+try:
+    from Classes.Entity import Entity
+    from Classes.OtherClasses import Weapon
+    from Other.dictionaries import allItems
+    import Classes.UI as UI
+except:
+    from Entity import Entity
+    from OtherClasses import Weapon
+    from ..Other.dictionaries import allItems
+    import UI
 
 hardVCap = pygame.Vector2(200, 200)  # (x, y)
 minVCap = pygame.Vector2(75, 50)

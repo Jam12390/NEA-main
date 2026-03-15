@@ -17,8 +17,7 @@ class PhysicsObject(pygame.sprite.Sprite):
         pVelocityCap: pygame.Vector2,
         startingVelocity: pygame.Vector2 = pygame.Vector2(0, 0),
         tags: list[str] = ["none"],
-        pIgnoreYFriction=False,
-        screenDimensions: tuple[int, int] = (1000, 800)
+        pIgnoreYFriction=False
     ):
         super().__init__()
         startingPosition = pygame.Vector2(startingPosition)
@@ -29,7 +28,7 @@ class PhysicsObject(pygame.sprite.Sprite):
         )
         self.absoluteCoordinate = startingPosition
         self.rect = pygame.Surface.get_rect(self.image)
-        self.rect.center = (round(startingPosition.x), round(startingPosition.y)) #(round(startingPosition.x + screenDimensions[0] // 2), round(startingPosition.y - screenDimensions[1]))
+        self.rect.center = (round(startingPosition.x), round(startingPosition.y))
         self.simulated = True
         self.tags = tags
         self._mass = pMass
@@ -65,13 +64,13 @@ class PhysicsObject(pygame.sprite.Sprite):
             key for key in self._yForces.keys()
         ]
 
-        for index in range(0, len(xForces)):  # sum of horizontal forces
+        for index in range(0, len(xForces)):  # Sum of horizontal forces
             resXForce += (
                 xForces[index]
                 if xForceKeys[index] not in includedForces
                 else xForces[index] * forceMult
             )
-        for index in range(0, len(yForces)):  # sum of vertical forces
+        for index in range(0, len(yForces)):  # Sum of vertical forces
             resYForce += (
                 yForces[index]
                 if yForceKeys[index] not in includedForces
@@ -79,7 +78,7 @@ class PhysicsObject(pygame.sprite.Sprite):
             )
         return pygame.Vector2(
             resXForce, resYForce
-        )  # store as vector2 (easier for later operations)
+        )  # Store as vector2 (easier for later operations)
 
     def getAcceleration(self):
         return self._resultantForce / self._mass  # a = F/m
@@ -397,7 +396,7 @@ class PhysicsObject(pygame.sprite.Sprite):
             axis = axis[0:1]  # data validation to ensure axis is 1 character
         if (
             direction == "l" or direction == "u"
-        ):  # dirEffect is used to ensure magnitude follows PYGAME's convention (-) = left or up, (+) = down or right
+        ):  # dirEffect is used to ensure magnitude follows pygame's convention (-) = left or up, (+) = down or right
             dirEffect = -1
         else:
             dirEffect = 1

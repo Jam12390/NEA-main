@@ -345,7 +345,7 @@ def pathfind(
                 startWaypoint = (int(startWaypoint[0]), int(startWaypoint[1]))
                 endWaypoint = waypointPath[nodeIndex + 1]
                 endWaypoint = (int(endWaypoint[0]), int(endWaypoint[1]))
-                if abs(startWaypoint[1] - endWaypoint[1]) > 0:
+                if abs(startWaypoint[1] - endWaypoint[1]) > 1:
                     # // Adding a diagonal node to the path is a simple way to indicate a jump
                     if endWaypoint[1] - startWaypoint[1] > 0 and nodeMap[startWaypoint[0] - 1][startWaypoint[1] + 1] != "#": # Going right and the top right adjacent node is free
                         finalPath.append((startWaypoint[0] - 1, startWaypoint[1] + 1))

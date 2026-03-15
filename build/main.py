@@ -76,7 +76,7 @@ def setup(mapName: str):
 
     inDeathScreen = False
 
-    mapPath = f"Prototype1/transfer/Maps/{mapName}.csv"
+    mapPath = f"Maps/{mapName}.csv"
 
     # Load map data
     mapResponse = mapLoading.loadMapData(

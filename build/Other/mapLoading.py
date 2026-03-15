@@ -1,11 +1,12 @@
 import pygame
 
-#try:
-#    import Prototype1.OtherClasses as OtherClasses
-#except:
-#    import Build.Classes.OtherClasses
-from ..Classes import OtherClasses
-import dictionaries
+try:
+    from ..Classes import OtherClasses
+    import dictionaries
+except:
+    import Classes.OtherClasses as OtherClasses
+    import Other.dictionaries as dictionaries
+
 import random
 import csv
 
@@ -39,7 +40,6 @@ def loadMapData(
 ) -> tuple[pygame.sprite.Group, pygame.sprite.Group, pygame.Vector2, list[pygame.Vector2]]:
     INVALIDKEYS = list(KEYS.values())
     INVALIDKEYS.append(-1) # Constant from now on
-    #INVALIDKEYS = [STARTKEY, ITEMKEY, ENEMYKEY, -1]
 
     # // Tiles and items use pygame.sprite.Groups since they are lists of objects which inherit from pygame.sprite.Sprite
     # // enemyStartPositions uses a list since it stores pygame.Vector2 objects instead of pygame.sprite.Sprite objects
@@ -48,7 +48,7 @@ def loadMapData(
     mapData = pygame.sprite.Group()
     items = pygame.sprite.Group()
     enemyStartPositions = []
-    with open(f"Prototype1/transfer/Maps/{mapName}.csv", "r") as map:
+    with open(f"Maps/{mapName}.csv", "r") as map:
         data = csv.reader(map, delimiter=" ", quotechar="|")
         segmentedData = []
         for row in data:
@@ -59,7 +59,7 @@ def loadMapData(
     currentNodePosition = [
         0,
         0,
-    ]  # shouldn't be extended but needs to be modifiable => [y, x]
+    ]  # Shouldn't be extended but needs to be modifiable => [y, x]
 
     # // Tiles are squares in this scenario, however if they aren't in the future, this logic is already implemented to cover that
     initialOffset = pygame.Vector2(
@@ -72,9 +72,7 @@ def loadMapData(
         currentNodePosition[1] = 0
         for column in row:
             # Column => str (e.g. "-1") needs to be compared to int IDs (e.g. -1)
-            # Currently the comparison is "-1" == -1
             column = int(column)
-            # After casting, -1 == -1
             # General check to see if the ID is considered a wall or not
             if not column in INVALIDKEYS:
                 # Try assign sprite and friction data from the tile's metadata
@@ -87,7 +85,7 @@ def loadMapData(
                     frictionCoef = tileData[0][1]
                 
                 # Gets the IDs of adjacent nodes
-                # // Inline clamping is cluttered but creating a separate function would be just as cluttered and therefore redundant
+                # // Inline clamping is messy but creating a separate function would be just as messy and therefore redundant
                 lWall = int(row[max(0, currentNodePosition[1] - 1)])
                 rWall = int(row[min(len(row) - 1, currentNodePosition[1] + 1)])
 
@@ -193,19 +191,9 @@ def loadMapData(
     for enemyStart in enemyStartPositions:
         enemyStart += playerDistFromCentre
     
-    #return (mapData, items, startPos, enemyStartPositions)
     return MapResponse(
         mapData=mapData,
         items=items,
         startPos=startPos,
         enemyStartPositions=enemyStartPositions
     )
-
-#loadMapData(
-#    mapName="testMapMove8",
-#    STARTKEY=5,
-#    ITEMKEY=6,
-#    ENEMYKEY=2,
-#    tileSize=76,
-#    baseScreenDimensions=pygame.Vector2(1000, 800)
-#)
