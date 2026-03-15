@@ -955,17 +955,8 @@ def exitCharacterSelect():
     global inCharacterSelect
     inCharacterSelect = False
 
-print("--------------------------------")
+
 # Run setup with hardcoded mapName
 setup(mapName=mapName)
-
-## DEBUG
-
-if not inCharacterSelect and not inMainmenu:
-    setPlayer(1)
-
-player.pickupItem(ID=1, quantity=2)
-
-## END DEBUG
 
 mainloop()

@@ -157,9 +157,9 @@ def cascadeUpdate(nodes: list[TopDownNode], startNode: TopDownNode):
 
 
 def getTopDownPath(
-    graph,
-    start,
-    end,
+    graph: list[tuple[int, int]], # Unsorted list of valid coordinates
+    start: tuple[int, int],
+    end: tuple[int, int],
     directionalGraph: Optional[
         list[tuple[tuple[int, int], str, tuple[int, int]]] # // directionalGraph => [((y, x), "->", (y2, x2))] | None
     ] = None, # // Defaults to None so directionalGraph=None doesn't have to be passed each time getTopDownPath is called
@@ -259,13 +259,10 @@ def flattenPath(nodeMap, path):
 def pathfind(
     graph: list[tuple[int, int]],
     nodeMap: list[list[str]],
-    nodeSep: int,
     start: tuple[int, int], # (y, x)
     end: tuple[int, int], # (y, x)
     waypoints: list[tuple[tuple, str, tuple]],
-    disconnectedWaypoints: list[tuple[int, int]],
-    jumpForce: float,
-    gravity: float
+    disconnectedWaypoints: list[tuple[int, int]]
 ):
     # // Instead of using a messy if statement to check if the start and end nodes exist in the graph,
     # // I can reuse Point's isValid() method without any impact on the big O space complexity
@@ -379,9 +376,6 @@ def pathfind(
                 )
             )
         else:
-            #reversed = list(tuple(flattenedPath)) # Disconnected copy of the original flattenedPath
-            #reversed.reverse() # 
-            #return reversed  # if start.getCoord()[1] < end.getCoord()[1] else flattenedPath
             flattenedPath.reverse() # Unreverse the reversed flattenedPath
             return flattenedPath
         return finalPath
@@ -415,20 +409,6 @@ def canFallTowardsPoint(
             return True
     return False
 
-# Checks if 
-#def checkGroundPathValidity(
-#    jumpHeightInNodes: int, flattenedPath: list[tuple[int, int]]
-#) -> bool:
-#    currentIndex = 0
-#    nextIndex = 1
-#    for index in range(0, len(flattenedPath) - 1):
-#        currentY = flattenedPath[currentIndex][0]
-#        nextY = flattenedPath[nextIndex][0]
-#        if currentY > nextY and currentY - nextY > jumpHeightInNodes:
-#            return False
-#        currentIndex += 1
-#        nextIndex += 1
-#    return True
 
 # Checks if the path is reachable by only moving across the ground
 def checkGroundPathValidity(
@@ -479,17 +459,7 @@ def findFreeNode(nodeMap, start: tuple[int, int]): # (y, x)
         return (start[0] + 1, start[1])
     else:
         raise Exception("No free node was found.") # Triggers the try: except: in main() to return []
-
-
-#def shortenPath(path):
-#    index = 0
-#    while index + 2 < len(path):
-#        xDiff = abs(path[index + 2][1] - path[index][1])
-#        yDiff = abs(path[index + 2][0] - path[index][0])
-#        if xDiff >= 1 and yDiff >= 1:
-#            path.pop(index + 1)
-#        index += 1
-#    return path
+    
 
 # // Removes most duplicates from the path
 # // More to help with reading the debug outputs than with performance
@@ -509,9 +479,6 @@ def main(
     end: tuple[int, int], # (y, x)
     precompiledData: precompile.PrecompileResponse, # Class containing metadata about the graph from precompile
     nodeMap: list[list[str]], # 2D list of which coordinates are walls
-    nodeSep: int,
-    jumpForce: float,
-    gravity: float,
 ):
 
     # Organising precompiledData
@@ -539,53 +506,18 @@ def main(
     path = pathfind(
         graph=graph,
         nodeMap=nodeMap,
-        nodeSep=nodeSep,
-        start=(int(start[0]), int(start[1])),
+        start=(
+            int(start[0]),
+            int(start[1])
+        ),
         end=(
             int(end[0]),
             int(end[1]),
         ),
         waypoints=waypoints,
-        disconnectedWaypoints=list(disconnectedWaypoints),
-        jumpForce=jumpForce,
-        gravity=gravity,
+        disconnectedWaypoints=list(disconnectedWaypoints)
     )
 
     path = shortenPath(path=path)
 
     return path
-
-
-#testGraph = precompile.loadMap(fileName="Prototype1/transfer/Maps/a.csv", invalidKeys=[5, 6, 2, -1])
-#gravityAccel = 9.81 * 15
-#nodeSep = 15
-#enemyData = {
-#   "jumpForce": 125,
-#   "maxSpeed": (100, 50)
-#}
-#response = precompile.precompileGraph(
-#   nodeMap=testGraph,
-#   nodeSep=nodeSep,
-#   gravity=gravityAccel,
-#   enemyData=enemyData,
-#   origin=(6, 0)
-#)
-#debug = True
-#t = time.time()
-#
-#if debug:
-#    a = main(
-#        start=(6, 0),
-#        end=(2, 5),
-#        precompiledData=response,
-#        nodeMap=testGraph,
-#        nodeSep=nodeSep,
-#        jumpForce=enemyData["jumpForce"],
-#        gravity=gravityAccel
-#    )
-#    for x in a:
-#       testGraph[x[0]][x[1]] = "x"
-#    for x in testGraph:
-#        print(x)
-#e = time.time()
-#print(e - t)
