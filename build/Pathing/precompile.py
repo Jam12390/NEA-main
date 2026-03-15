@@ -1,7 +1,4 @@
-try:
-    import transfer.suvat as suvat
-except:
-    import suvat
+import suvat
 import csv
 
 class Point:

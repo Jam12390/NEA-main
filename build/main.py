@@ -1,10 +1,10 @@
 import pygame
 import sys
-from EntitySubclasses import Player, Enemy
-from dictionaries import *
-import UI
-import nMapLoading
-from transfer import precompile
+from Classes.EntitySubclasses import Player, Enemy
+from Other.dictionaries import *
+import Classes.UI as UI
+import Other.mapLoading as mapLoading
+import Pathing.precompile as precompile
 
 screenWidth = 1000
 screenHeight = screenWidth * 0.8  # keep the ratio for w-h at 1:0.8 - could change later
@@ -79,7 +79,7 @@ def setup(mapName: str):
     mapPath = f"Prototype1/transfer/Maps/{mapName}.csv"
 
     # Load map data
-    mapResponse = nMapLoading.loadMapData(
+    mapResponse = mapLoading.loadMapData(
         mapName=mapName,
         KEYS={
             "STARTKEY": 5,
