@@ -66,7 +66,6 @@ class Entity(PhysicsObject):
         self.attackCooldown = pAttackCooldown
         self.cooldownRemaining = 0.0
         self._effects = {}
-        #####PROTOTYPE 2
         self.isPathing = False
         self.currentPathEnd = (0, 0)  # (x, y)
         # self.currentNode = (0, 0) #(y, x)
@@ -169,47 +168,23 @@ class Entity(PhysicsObject):
         target,  # (y, x)
         precompiledData,
         nodeMap,
-        nodeSep,
-        gravity=9.81 * 15,
-        rePathTolerance=1, # node
+        rePathTolerance=1, # in terms of nodes
     ):
         pathingTo = target.currentNode
         pathingTo = (int(pathingTo[0]), int(pathingTo[1]))
-        # print(self.currentNode)
-        # print(self.currentPath)
-        # print(precompile.getLowerNodes(
-        #        topNodes=[precompile.Point(
-        #            x=pathingTo[1],
-        #            y=pathingTo[0],
-        #            nodeMap=nodeMap
-        #        )],
-        #        nodeMap=nodeMap
-        #    )["floorNodes"][0].getCoord())
-        # print(self.isPathing)
         if (
+            # Very large impact on performance
             pathing.getHeuristic(start=self.currentPathEnd, end=pathingTo)
-            > rePathTolerance
+            > rePathTolerance # Stops the entity from re-pathing every frame
             or not self.isPathing
         ) and self.shouldPath:
-            # if precompile.getLowerNodes(
-            #    topNodes=[precompile.Point(
-            #        x=pathingTo[1],
-            #        y=pathingTo[0],
-            #        nodeMap=nodeMap
-            #    )],
-            #    nodeMap=nodeMap
-            # )["floorNodes"][0].getCoord() != pathingTo or not self.isPathing: #this is nested to save what little performance i have left
             self.currentPathEnd = pathingTo
 
             newPath = pathing.main(
-                precompiledData=precompiledData,
-                nodeMap=nodeMap,
-                nodeSep=nodeSep,
                 start=self.currentNode,
                 end=pathingTo,
-                jumpForce=self._jumpForce,
-                #maxXSpeed=self._velocityCap.x,
-                gravity=gravity,
+                precompiledData=precompiledData,
+                nodeMap=nodeMap
             )
 
             if len(newPath) > 0:
@@ -217,27 +192,27 @@ class Entity(PhysicsObject):
             cleanPath = []
             for x in self.currentPath:
                 if not x in cleanPath:
-                    cleanPath.append(x)
+                    cleanPath.append(x) # Remove duplicates
 
             self.currentPath = cleanPath
 
             if len(self.currentPath) == 1:
                 if self.currentPath[0] == self.currentNode:
-                    self.isPathing = False
+                    self.isPathing = False # Delete the path if we're already on the node
                     self.currentPath = []
                 elif len(self.currentPath) > 0:
-                    self.isPathing = True
+                    self.isPathing = True # Otherwise start pathing
             elif len(self.currentPath) > 0:
                 self.isPathing = True
-            # self.shouldPath = False
             pass
         if len(self.currentPath) > 0:
 
             if self.currentNode in self.currentPath and self.isGrounded:
 
                 index = self.currentPath.index(self.currentNode)
+                # Deleting all nodes up to the node we're at
                 for x in range(0, index + 1):
-                    self.framesSinceLastNode = 0
+                    self.framesSinceLastNode = 0 # Frames since a node was removed from currentPath
                     self.previousPathCoord = self.currentPath[0]
                     self.removeForce(axis="x", ref="xPathing")
                     self.currentPath.pop(0)
@@ -246,34 +221,29 @@ class Entity(PhysicsObject):
                 self.currentNode[0] < self.currentPath[0][0] # (y, x)
                 and self.currentNode[1] == self.currentPath[0][1]
             ):
+                # // Stops the entity from becoming stuck on a node
+                # // by adding a time limit of 0.5s between nodes.
+                # // If the entity hasn't moved nodes by the time 0.5s is up,
+                # // delete the first index of currentPath and continue
                 self.framesSinceLastNode = 0
                 self.previousPathCoord = self.currentPath[0]
                 self.currentPath.pop(0)
                 self.removeForce(axis="x", ref="xPathing")
-                #try:
-                #    self.previousPathCoord = self.currentPath[0]
-                #except:
-                #    pass
 
             try:
                 xNodeDiff = (
                     self.currentPath[0][1] - self.currentNode[1]
                 )  # + => Move right. - => Move left.
-                # print(f"pathing to {self.currentPath[0]}")
-                # print(f"x => {xNodeDiff}")
+                
                 xDir = "l" if xNodeDiff < 0 else "r"
                 yNodeDiff = (
                     self.currentNode[0] - self.currentPath[0][0]
                 )  # + => Move up. - => Move down.
-                # print(f"y => {yNodeDiff}")
-                yDir = "u" if yNodeDiff > 0 else "d"
-                # if (not self.containsForce(axis="x", ref="xPathing")) and xNodeDiff != 0:
-                # print(f"added xPathing")
-                #if self.isGrounded or (self._velocity.x < 0 and xDir == "l") or (self._velocity.x > 0 and xDir == "r"):
+
                 self.addForce(axis="x", direction=xDir, ref="xPathing", magnitude=1000)
                 if xNodeDiff == 0:
-                    self.removeForce(axis="x", ref="xPathing")
-                elif self.framesSinceLastNode > 10:
+                    self.removeForce(axis="x", ref="xPathing") # No need to move nodes
+                elif self.framesSinceLastNode > 10: # Forces the entity to wait before initially moving
                     self.addForce(
                         axis="x", direction=xDir, ref="xPathing", magnitude=1000
                     )
@@ -284,15 +254,16 @@ class Entity(PhysicsObject):
                 pass
 
         if len(self.currentPath) == 0 and self.currentNode != pathingTo:
+            # Reset pathing state
             self.removeForce(axis="x", ref="xPathing")
             self.removeForce(axis="x", ref="closePath")
             self.isPathing = False
             self.shouldPath = False
-            self._velocity.x /= 1.5
+            self._velocity.x /= 1.5 # Stops the enemy
         elif self.currentNode == pathingTo and not self.containsForce(
             axis="x", ref="closePath"
         ):
-            self.addForce(
+            self.addForce( # Pathing within the target node
                 axis="x",
                 direction="l" if target.rect.centerx < self.rect.centerx else "r",
                 magnitude=1000,
@@ -361,5 +332,3 @@ class Entity(PhysicsObject):
                 int((self.absoluteCoordinate.y) // 75),  # (y, x)
                 int(((self.absoluteCoordinate.x) // 75)),
             )
-
-            # self.rect.clamp_ip(pygame.display.get_surface().get_rect())
