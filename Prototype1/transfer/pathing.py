@@ -163,7 +163,6 @@ def getTopDownPath(
     graph,
     start,
     end,
-    tolerance: int,
     directionalGraph: Optional[
         list[tuple[tuple[int, int], str, tuple[int, int]]] # // directionalGraph => [((y, x), "->", (y2, x2))] | None
     ] = None, # // Defaults to None so directionalGraph=None doesn't have to be passed each time getTopDownPath is called
@@ -267,7 +266,6 @@ def pathfind(
     nodeSep: int,
     start: tuple[int, int], # (y, x)
     end: tuple[int, int], # (y, x)
-    tolerance: int,
     waypoints: list[tuple[tuple, str, tuple]],
     disconnectedWaypoints: list[tuple[int, int]],
     jumpForce: float,
@@ -284,7 +282,7 @@ def pathfind(
         start = precompile.getLowerNodes(
             topNodes=[precompile.Point(x=start[1], y=start[0], nodeMap=nodeMap)],
             nodeMap=nodeMap,
-        )["floorNodes"][0] # Both the start and the end nodes should begin on the ground
+        ).FLOORNODES[0] # Both the start and the end nodes should begin on the ground
     except:
         pass
 
@@ -292,7 +290,7 @@ def pathfind(
         end = precompile.getLowerNodes(
             topNodes=[precompile.Point(x=end[1], y=end[0], nodeMap=nodeMap)],
             nodeMap=nodeMap,
-        )["floorNodes"][0]
+        ).FLOORNODES[0]
     except:
         pass
 
@@ -301,7 +299,6 @@ def pathfind(
         graph=graph,
         start=start.getCoord(),
         end=end.getCoord(),
-        tolerance=tolerance,
         directionalGraph=None,
     )
     if len(absolutePath) != 0:
@@ -328,7 +325,6 @@ def pathfind(
             graph=graph, # Unsorted list of valid nodes
             start=nearestStartWaypoint,
             end=nearestEndWaypoint,
-            tolerance=tolerance,
             directionalGraph=waypoints,
         )
         finalPath = []
@@ -340,21 +336,16 @@ def pathfind(
                 graph=graph,
                 start=start.getCoord(),
                 end=nearestStartWaypoint,
-                tolerance=tolerance,
                 directionalGraph=None,
             ) # Start with the first waypoint
-
-            # Using the same suvat logic from prototype 1 to get the jumpHeight in nodes
-            jumpHeight = abs(
-                s(u=jumpForce, g=gravity, t=solveV(targetV=0, u=jumpForce, g=gravity))
-            )
-            jumpHeightInNodes = jumpHeight // nodeSep # jumpHeightInNodes is an integer, hence the DIV operator
 
             # Iterating through and connecting waypoints
             for nodeIndex in range(0, len(waypointPath) - 1):
                 startWaypoint = waypointPath[nodeIndex]
+                startWaypoint = (int(startWaypoint[0]), int(startWaypoint[1]))
                 endWaypoint = waypointPath[nodeIndex + 1]
-                if abs(startWaypoint[1] - endWaypoint[1]) > 99:
+                endWaypoint = (int(endWaypoint[0]), int(endWaypoint[1]))
+                if abs(startWaypoint[1] - endWaypoint[1]) > 0:
                     # // Adding a diagonal node to the path is a simple way to indicate a jump
                     if endWaypoint[1] - startWaypoint[1] > 0 and nodeMap[startWaypoint[0] - 1][startWaypoint[1] + 1] != "#": # Going right and the top right adjacent node is free
                         finalPath.append((startWaypoint[0] - 1, startWaypoint[1] + 1))
@@ -364,8 +355,7 @@ def pathfind(
                     absolutePath = getTopDownPath(
                         graph=graph,
                         start=startWaypoint,
-                        end=endWaypoint,
-                        tolerance=0,
+                        end=endWaypoint
                     )
 
                     # Take the lowest path whenever possible
@@ -394,7 +384,6 @@ def pathfind(
                         graph=graph,
                         start=nearestEndWaypoint,
                         end=end.getCoord(),
-                        tolerance=tolerance,
                         directionalGraph=None,
                     ),
                 )
@@ -529,7 +518,7 @@ def shortenPath(path):
 def main(
     start: tuple[int, int], # (y, x)
     end: tuple[int, int], # (y, x)
-    precompiledData: dict[str, list], # Dictionary containing metadata about the graph from precompile
+    precompiledData: precompile.PrecompileResponse, # Dictionary containing metadata about the graph from precompile
     nodeMap: list[list[str]], # 2D list of which coordinates are walls
     nodeSep: int,
     jumpForce: float,
@@ -537,10 +526,13 @@ def main(
 ):
 
     # Organising precompiledData
-    graph = precompiledData["nodes"]
-
-    waypoints = precompiledData["waypointData"]["waypoints"]
-    disconnectedWaypoints = precompiledData["waypointData"]["disconnectedWaypoints"]
+    #graph = precompiledData["nodes"]
+#
+    #waypoints = precompiledData["waypointData"]["waypoints"]
+    #disconnectedWaypoints = precompiledData["waypointData"]["disconnectedWaypoints"]
+    graph = precompiledData.NODES
+    waypoints = precompiledData.WAYPOINTDATA.WAYPOINTS
+    disconnectedWaypoints = precompiledData.WAYPOINTDATA.DISCONNECTEDWAYPOINTS
 
     try:
         # Make sure start and end are free
@@ -554,7 +546,7 @@ def main(
                 precompile.Point(x=end[1], y=end[0], nodeMap=nodeMap),
             ],
             nodeMap=nodeMap,
-        )["floorNodes"][0].getCoord() # And that end has a floor node to travel to
+        ).FLOORNODES[0].getCoord() # And that end has a floor node to travel to
     except:
         return [] # Otherwise return []
 

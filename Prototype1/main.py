@@ -81,7 +81,7 @@ def setup(mapName: str):
 
     mapPath = f"Prototype1/transfer/Maps/{mapName}.csv"
 
-    # load map data
+    # Load map data
     mapResponse = nMapLoading.loadMapData(
         mapName=mapName,
         KEYS={
