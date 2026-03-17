@@ -1,14 +1,18 @@
 import pygame
-try:
-    from Classes.Entity import Entity
-    from Classes.OtherClasses import Weapon
-    from Other.dictionaries import allItems
-    import Classes.UI as UI
-except:
-    from Entity import Entity
-    from OtherClasses import Weapon
-    from ..Other.dictionaries import allItems
-    import UI
+#try:
+#    from Classes.Entity import Entity
+#    from Classes.OtherClasses import Weapon
+#    from Other.dictionaries import allItems
+#    import Classes.UI as UI
+#except:
+#    from Entity import *
+#    from OtherClasses import Weapon
+#    from ..Other.dictionaries import allItems
+#    import UI
+from Classes import Entity, OtherClasses, UI
+from Other import dictionaries
+#from OtherClasses import *
+#from dictionaries import *
 
 hardVCap = pygame.Vector2(200, 200)  # (x, y)
 minVCap = pygame.Vector2(75, 50)
@@ -16,7 +20,7 @@ minVCap = pygame.Vector2(75, 50)
 minPlayerSpeed = 0.1
 
 
-class Player(Entity):
+class Player(Entity.Entity):
     def __init__(
         self,
         FPS: int,
@@ -62,7 +66,7 @@ class Player(Entity):
         self.inventory = {}
         self.fastFalling = False
         self.crouched = False
-        self.weapon = Weapon(
+        self.weapon = OtherClasses.Weapon(
             FPS=FPS,
             pID=startingWeaponID,
             startingPosition=pygame.Vector2(
@@ -86,7 +90,7 @@ class Player(Entity):
         if replaces == "weapon":
             newData = {"ID": self.weapon.ID, "quantity": 1}
             self.weapon.killSelf()  # destroy the current weapon
-            self.weapon = Weapon(
+            self.weapon = OtherClasses.Weapon(
                 FPS=self.FPS,
                 pID=ID,
                 startingPosition=pygame.Vector2(
@@ -107,14 +111,14 @@ class Player(Entity):
                 self.inventory.pop(int(replaces))  # delete it
             self.inventory[ID] = [
                 "item",
-                allItems[ID]["description"],
+                dictionaries.allItems[ID]["description"],
                 quantity,
             ]  # add the new item to the inventory
 
         else:  # otherwise
             self.inventory[ID] = [
                 "item",
-                allItems[ID]["description"],
+                dictionaries.allItems[ID]["description"],
                 quantity,
             ]  # add the item normally
         self._recalculateAttributes()
@@ -135,7 +139,7 @@ class Player(Entity):
             key = keys[index]
             value = values[index]
             if value[0] == "item":
-                splitValue = allItems[key]["effects"].split(", ")
+                splitValue = dictionaries.allItems[key]["effects"].split(", ")
                 splitEffects = [
                     item.split(" ") for item in splitValue
                 ]  # double split to cover items which affect multiple attributes
@@ -254,7 +258,7 @@ class Player(Entity):
             return displacement  # playerMoved
 
 
-class Enemy(Entity):
+class Enemy(Entity.Entity):
     def __init__(
         self,
         FPS,
@@ -296,7 +300,7 @@ class Enemy(Entity):
         self.__aggroRange = pAggroRange
         self.__aggrod = False
         self.__seen = False
-        self.weapon = Weapon(
+        self.weapon = OtherClasses.Weapon(
             FPS=FPS,
             pID=weaponID,
             startingPosition=pygame.Vector2(
@@ -346,10 +350,13 @@ class Enemy(Entity):
                 self.path(
                     target=target,
                     precompiledData=precompiledData,
-                    nodeMap=nodeMap,
-                    nodeSep=nodeSep,
+                    nodeMap=nodeMap
                 )
                 self.__framesSinceLastPath = 0
+                if self.__aggrod and len(self.currentPath) == 0:
+                    direction = "l" if self.rect.centerx > target.rect.centerx else "r"
+                    self.removeForce(axis="x", ref="closePath")
+                    self.addForce(axis="x", ref="closePath", direction=direction, magnitude=1000)
 
             if not self.__aggrod:
                 self.removeForce(axis="x", ref="closePath")
@@ -360,6 +367,9 @@ class Enemy(Entity):
             )
             self._acceleration = self.getAcceleration()
             self.getVelocity()
+
+            if not self.__aggrod:
+                self._velocity.x /= 1.5
 
             displacement = self.displaceObject(collidableObjects=collidableObjects)
 

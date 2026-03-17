@@ -168,7 +168,7 @@ class Entity(PhysicsObject):
         target,  # (y, x)
         precompiledData,
         nodeMap,
-        rePathTolerance=1, # in terms of nodes
+        rePathTolerance=0, # in terms of nodes
     ):
         pathingTo = target.currentNode
         pathingTo = (int(pathingTo[0]), int(pathingTo[1]))
@@ -194,7 +194,7 @@ class Entity(PhysicsObject):
                 if not x in cleanPath:
                     cleanPath.append(x) # Remove duplicates
 
-            self.currentPath = cleanPath
+            self.currentPath = list(tuple(cleanPath))
 
             if len(self.currentPath) == 1:
                 if self.currentPath[0] == self.currentNode:
@@ -207,7 +207,8 @@ class Entity(PhysicsObject):
             pass
         if len(self.currentPath) > 0:
 
-            if self.currentNode in self.currentPath and self.isGrounded:
+            #if self.currentNode in self.currentPath and self.isGrounded:
+            if self.currentNode == self.currentPath[0] and self.isGrounded:
 
                 index = self.currentPath.index(self.currentNode)
                 # Deleting all nodes up to the node we're at

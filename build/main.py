@@ -58,7 +58,7 @@ player = Player(
    )
 
 # current game state (in terms of UI)
-inMainmenu = True
+inMainmenu = False
 
 inCharacterSelect = False
 
@@ -180,6 +180,7 @@ debug = True
 
 observePaths = True
 observeNodes = True
+observeVelocity = True
 pauseOnObservation = True
 
 def mainloop():
@@ -227,7 +228,7 @@ def mainloop():
                     paused = True
                     pauseMenu()
                 
-                if event.key == pygame.K_l and debug:
+                if event.key == pygame.K_PERIOD and debug:
                     print(f"Player: {player.currentNode}")
                     print("--------")
                     for enemy in enemies:
@@ -235,6 +236,9 @@ def mainloop():
                             print(f"Enemy: {enemy.currentPath}")
                         if observeNodes:
                             print(f"Enemy: {enemy.currentNode}")
+                        if observeVelocity:
+                            print(f"Enemy: {enemy._velocity}")
+                            print(f"Enemy: {enemy._xForces}")
                         print("---")
                     print("----------------------------")
                     if pauseOnObservation:
