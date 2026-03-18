@@ -58,7 +58,7 @@ player = Player(
    )
 
 # current game state (in terms of UI)
-inMainmenu = False
+inMainmenu = True
 
 inCharacterSelect = False
 
