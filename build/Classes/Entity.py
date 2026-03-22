@@ -8,7 +8,7 @@ try:
 except:
     from Classes.PhysicsObject import PhysicsObject
     from Other.dictionaries import allEffects
-    from Pathing import pathing
+    from Pathing import pathing, precompile
 
 operators = {
     "+": operator.add,
@@ -36,8 +36,7 @@ class Entity(PhysicsObject):
         pVelocityCap: pygame.math.Vector2,
         startingVelocity: pygame.math.Vector2 = pygame.math.Vector2(0, 0),
         tags: str = ["None"],
-        pIgnoreYFriction=False,
-        screenDimensions: tuple[int, int] = (1000, 800),
+        pIgnoreYFriction=False
     ):
         super().__init__(
             FPS=FPS,
@@ -162,13 +161,12 @@ class Entity(PhysicsObject):
         else:
             self._velocityCap.y += magnitude * self._speed
 
-    #####PROTOTYPE 2
     def path(
         self,
-        target,  # (y, x)
-        precompiledData,
-        nodeMap,
-        rePathTolerance=0, # in terms of nodes
+        target: Entity,  # Anything which inherits from Entity
+        precompiledData: precompile.PrecompileResponse,
+        nodeMap: list[list[str]],
+        rePathTolerance: int=0, # In terms of nodes
     ):
         pathingTo = target.currentNode
         pathingTo = (int(pathingTo[0]), int(pathingTo[1]))
@@ -204,10 +202,9 @@ class Entity(PhysicsObject):
                     self.isPathing = True # Otherwise start pathing
             elif len(self.currentPath) > 0:
                 self.isPathing = True
-            pass
+            
         if len(self.currentPath) > 0:
 
-            #if self.currentNode in self.currentPath and self.isGrounded:
             if self.currentNode == self.currentPath[0] and self.isGrounded:
 
                 index = self.currentPath.index(self.currentNode)
@@ -287,7 +284,7 @@ class Entity(PhysicsObject):
                 )
 
         if self.simulated:
-            # this is in depencency order i.e. all physics functions require updated attributes, therefore self._recalculateAttributes() is run
+            # This is in depencency order i.e. all physics functions require updated attributes, therefore self._recalculateAttributes() is run
 
             self._recalculateAttributes()
 
@@ -296,8 +293,6 @@ class Entity(PhysicsObject):
             )
             if self.paused:
                 self.paused = False
-
-            # print(self._xForces)
 
             self._acceleration = self.getAcceleration()
             self.getVelocity()

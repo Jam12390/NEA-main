@@ -30,7 +30,8 @@ allWeapons = {
         "description": "Just a shard of glass - Pretty sharp!",
         "damage": 10,
         "initialRotation": -90,
-        "inventoryOffset": pygame.Vector2(-35, 25)
+        "inventoryOffset": pygame.Vector2(-35, 25),
+        "inventoryScaleRatio": pygame.Vector2(3.75, 20)
     }
 }
 

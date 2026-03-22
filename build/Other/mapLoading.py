@@ -32,12 +32,12 @@ def loadMapData(
     # IDs of specific tile types
     # // Passed as a dictionary to ease scaling tile types in the future
     KEYS: dict[str, int],
-    tileSize: int,
+    TILESIZE: pygame.Vector2,
     baseScreenDimensions: tuple[int, int],
     tileData: dict[int, tuple[str, float]] = {
         0: ("Sprites/DefaultSprite.png", (0.75, 0.5))
     },  # ID: (spritePath, frictionCoef => (x, y))
-) -> tuple[pygame.sprite.Group, pygame.sprite.Group, pygame.Vector2, list[pygame.Vector2]]:
+) -> MapResponse:
     INVALIDKEYS = list(KEYS.values())
     INVALIDKEYS.append(-1) # Constant from now on
 
@@ -52,7 +52,7 @@ def loadMapData(
         data = csv.reader(map, delimiter=" ", quotechar="|")
         segmentedData = []
         for row in data:
-            segmentedData.append([x for x in row[0].split(",")])
+            segmentedData.append([int(x) for x in row[0].split(",")])
         segmentedData.pop(0)
         map.close()
 
@@ -60,19 +60,16 @@ def loadMapData(
         0,
         0,
     ]  # Shouldn't be extended but needs to be modifiable => [y, x]
-
     # // Tiles are squares in this scenario, however if they aren't in the future, this logic is already implemented to cover that
     initialOffset = pygame.Vector2(
-        tileSize // 2,
-        tileSize // 2
+        TILESIZE.x // 2,
+        TILESIZE.y // 2
     )
 
     for row in segmentedData:
         # Reset column index
         currentNodePosition[1] = 0
         for column in row:
-            # Column => str (e.g. "-1") needs to be compared to int IDs (e.g. -1)
-            column = int(column)
             # General check to see if the ID is considered a wall or not
             if not column in INVALIDKEYS:
                 # Try assign sprite and friction data from the tile's metadata
@@ -93,7 +90,7 @@ def loadMapData(
                 floor = int(segmentedData[min(len(segmentedData) - 1, currentNodePosition[0] + 1)][currentNodePosition[1]])
 
                 # The IDs are stored in separate variables to simplify the expressions in lWallPresent, rWallPresent, etc.
-                lWallPresent = (not lWall in INVALIDKEYS) or currentNodePosition[1] - 1 < 0 # TODO: create a diagram for how these expressions work
+                lWallPresent = (not lWall in INVALIDKEYS) or currentNodePosition[1] - 1 < 0
                 rWallPresent = (not rWall in INVALIDKEYS) or currentNodePosition[1] + 1 >= len(row)
 
                 roofPresent = (not roof in INVALIDKEYS) or currentNodePosition[0] - 1 < 0
@@ -117,12 +114,12 @@ def loadMapData(
                 
                 mapData.add(
                     OtherClasses.WallObj(
-                        size=pygame.Vector2(tileSize, tileSize),
+                        size=pygame.Vector2(TILESIZE.x, TILESIZE.y),
                         # currentNodePosition translated into absoluteCoordinates =
-                        # currentNodePosition * tileSize + distance to tile centre
+                        # currentNodePosition * TILESIZE + distance to tile centre
                         position=pygame.Vector2(
-                            (currentNodePosition[1] * tileSize),
-                            (currentNodePosition[0] * tileSize)
+                            (currentNodePosition[1] * TILESIZE.x),
+                            (currentNodePosition[0] * TILESIZE.y)
                         ) + initialOffset,
                         frictionCoef=frictionCoef,
                         spritePath=sprite,
@@ -132,15 +129,15 @@ def loadMapData(
             elif column == KEYS["STARTKEY"]:
                 # Set start position
                 startPos = pygame.Vector2(
-                    (currentNodePosition[1] * tileSize),
-                    (currentNodePosition[0] * tileSize)
+                    (currentNodePosition[1] * TILESIZE.x),
+                    (currentNodePosition[0] * TILESIZE.y)
                 ) + initialOffset
             elif column == KEYS["ITEMKEY"]:
                 # Get a random item
                 ID = random.randint(0, len(dictionaries.allItems.keys()) - 1)
                 itemPos = pygame.Vector2(
-                    (currentNodePosition[1] * tileSize),
-                    (currentNodePosition[0] * tileSize)
+                    (currentNodePosition[1] * TILESIZE.x),
+                    (currentNodePosition[0] * TILESIZE.y)
                 ) + initialOffset
 
                 # And add it to (rendered) items
@@ -158,8 +155,8 @@ def loadMapData(
                 )
             elif column == KEYS["ENEMYKEY"]:
                 enemyPos = pygame.Vector2(
-                    (currentNodePosition[1] * tileSize),
-                    (currentNodePosition[0] * tileSize)
+                    (currentNodePosition[1] * TILESIZE.x),
+                    (currentNodePosition[0] * TILESIZE.y)
                 ) + initialOffset
                 enemyStartPositions.append(enemyPos)
 

@@ -278,7 +278,8 @@ class Enemy(Entity.Entity):
         weaponID=0,
         tags=["Enemy"],
         pIgnoreYFriction=False,
-        screenDimensions: tuple[int, int] = (1000, 800)
+        screenDimensions: tuple[int, int] = (1000, 800),
+        TILESIZE: pygame.Vector2 = pygame.Vector2(76, 76)
     ):
         super().__init__(
             FPS,
@@ -311,9 +312,10 @@ class Enemy(Entity.Entity):
         self.__framesSinceLastSight = 0
 
         self.currentNode = (
-            int((self.absoluteCoordinate.x) // 75),
-            int((self.absoluteCoordinate.y) // 75),
+            int((self.absoluteCoordinate.x) // TILESIZE.x),
+            int((self.absoluteCoordinate.y) // TILESIZE.y),
         )
+        self.__TILESIZE = TILESIZE
 
         self.sightRect = pygame.Rect(
             self.rect.centerx, self.rect.centery, self.__aggroRange * 2, 10
@@ -326,7 +328,6 @@ class Enemy(Entity.Entity):
         collidableObjects,
         precompiledData,
         nodeMap,
-        nodeSep,
         target,
         playerRect,
     ):
@@ -346,20 +347,18 @@ class Enemy(Entity.Entity):
 
             self.shouldPath = self.__aggrod
 
-            if self.__framesSinceLastPath > 0:# and self.aggrod:  #
+            # Can be changed depending on performance
+            # Greater values => Less accurate pathing but better performance (since less path() calls)
+            if self.__framesSinceLastPath > 0:
                 self.path(
                     target=target,
                     precompiledData=precompiledData,
                     nodeMap=nodeMap
                 )
                 self.__framesSinceLastPath = 0
-                if self.__aggrod and len(self.currentPath) == 0:
-                    direction = "l" if self.rect.centerx > target.rect.centerx else "r"
-                    self.removeForce(axis="x", ref="closePath")
-                    self.addForce(axis="x", ref="closePath", direction=direction, magnitude=1000)
 
             if not self.__aggrod:
-                self.removeForce(axis="x", ref="closePath")
+                self.removeForce(axis="x", ref="closePath") # Ensures that no pathing forces act on a deaggrod enemy
                 self.removeForce(axis="x", ref="xPathing")
 
             self._resultantForce = self.recalculateResultantForce(
@@ -369,26 +368,30 @@ class Enemy(Entity.Entity):
             self.getVelocity()
 
             if not self.__aggrod:
-                self._velocity.x /= 1.5
+                self._velocity.x /= 1.5 # Simple way to slow the enemy when they don't have a reason to move
 
             displacement = self.displaceObject(collidableObjects=collidableObjects)
 
-            if abs(displacement.x) < 2.5:
+            if abs(displacement.x) < 2.5: # Tolerance for registering enemy movement
                 displacement.x = 0
             if abs(displacement.y) < 0.25:
                 displacement.y = 0
 
+            # Checks if the enemy has left the last node it pathed to
             if self.currentNode == self.previousPathCoord:
-                self.framesSinceLastNode += 1
+                self.framesSinceLastNode += 1 # Increments framesSinceLastNode if not
 
+            # Updating position
             self.rect.center += displacement
             self.absoluteCoordinate += displacement
 
+            # Updating currentNode
             self.currentNode = (
-                int((self.absoluteCoordinate.y) // 75),  # (y, x)
-                int(((self.absoluteCoordinate.x) // 75)),
+                int((self.absoluteCoordinate.y) // self.__TILESIZE.x),  # (y, x)
+                int(((self.absoluteCoordinate.x) // self.__TILESIZE.y)),
             )
         else:
+            # Resetting values to default if the enemy isn't simulated
             self.__framesSinceLastSight += 1
             self.shouldPath = False
             self.currentPath = []

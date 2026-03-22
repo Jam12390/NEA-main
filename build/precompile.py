@@ -100,6 +100,13 @@ class PrecompileResponse:
         self.WAYPOINTDATA = waypointData
 
 
+# // Reduces the usage of dictionaries which are much more prone to errors
+class ColumnNodeData:
+    def __init__(self):
+        self.nodes = list[Point]([])
+        self.floorNodes = list[Point]([])
+
+
 # Conversion to node terms
 def nearestNode(absolute: tuple[float, float], nodeSep: int) -> tuple[int, int]:
     yCo = absolute[0] // nodeSep
@@ -238,7 +245,7 @@ def jumpOffEdge(
         dirEffect = 1
 
     parabolaPoints = list[Point](
-        getPointsAcrossCurve( # Parabola
+        getPointsAcrossCurve(  # Parabola
             u=jumpForce,
             g=gravity,
             maxXSpeed=maxXSpeed,
@@ -254,7 +261,7 @@ def jumpOffEdge(
     hitRoof = False
     hitWall = False
     hitFloor = False
-    roofNode = None # Nullable Point object - Assigned if a roof is hit
+    roofNode = None  # Nullable Point object - Assigned if a roof is hit
 
     for currentNode in parabolaPoints:
         # Until something happens
@@ -488,7 +495,7 @@ def traverseFloor(
                 while (  # While the current node is within the graph's bounds, is empty and is within the entity's jump range
                     current.isValid()
                     and current.isEmpty()
-                    and stepUp <= jumpForceInNodes
+                    and stepUp < jumpForceInNodes
                 ):
                     # Mark the left and right adjacent nodes
                     leftNode = Point(x=current.x() - 1, y=current.y(), nodeMap=nodeMap)
@@ -723,13 +730,12 @@ def precompileGraph(
                     nodeMap=nodeMap, jumpForceInNodes=jumpHeightInNodes, origin=floor
                 )
 
-                floorY = floor.y()
                 # Transferring data from floorData to other lists to iterate through
                 for corner in floorData.CORNERS:
                     if not corner in corners:
                         corners.append(corner)
                 for node in floorData.NODES:
-                    if node.y() == floorY and not node.getCoord() in traversedFloors:
+                    if node.y() == floor.y() and not node.getCoord() in traversedFloors:
                         traversedFloors.append(node.getCoord())
                 for newFloor in floorData.NEWFLOORS:
                     if (
@@ -771,7 +777,7 @@ def precompileGraph(
                 direction=corner[1],
             )
 
-            columnNodeData = {"nodes": list[Point]([]), "floorNodes": list[Point]([])}
+            columnNodeData = ColumnNodeData()
             for x in range(
                 0, 2
             ):  # // The logic used for topNodes and fallNodes is identical and so is simplified using a for loop
@@ -798,21 +804,21 @@ def precompileGraph(
                     tuple(preservedNodes)
                 )  # list(tuple()) is used for the same reason as in traverseFloor()
                 response = getLowerNodes(topNodes=observedList, nodeMap=nodeMap)
-                columnNodeData["nodes"].extend(response.NODES)
-                columnNodeData["floorNodes"].extend(response.FLOORNODES)
+                columnNodeData.nodes.extend(response.NODES)
+                columnNodeData.floorNodes.extend(response.FLOORNODES)
 
             # Removing duplicates
-            cleanColumnData = {"nodes": [], "floorNodes": []}
-            for x in columnNodeData["nodes"]:
-                if not x in cleanColumnData["nodes"]:
-                    cleanColumnData["nodes"].append(x)
-            for x in columnNodeData["floorNodes"]:
-                if not x in cleanColumnData["floorNodes"]:
-                    cleanColumnData["floorNodes"].append(x)
+            cleanColumnData = ColumnNodeData()
+            for x in columnNodeData.nodes:
+                if not x in cleanColumnData.nodes:
+                    cleanColumnData.nodes.append(x)
+            for x in columnNodeData.floorNodes:
+                if not x in cleanColumnData.floorNodes:
+                    cleanColumnData.floorNodes.append(x)
             columnNodeData = cleanColumnData
 
             # Cycle through newFloors to traverse
-            for newFloor in columnNodeData["floorNodes"]:
+            for newFloor in columnNodeData.floorNodes:
                 if not newFloor.getCoord() in traversedFloors and not (
                     newFloor.getCoord() in allNodes
                     or inList(
@@ -823,7 +829,7 @@ def precompileGraph(
                 waypoints.append(
                     (corner[0].getCoord(), "->", newFloor.getCoord())
                 )  # Add a waypoint between the origin corner and the new floor
-            for node in columnNodeData["nodes"]:
+            for node in columnNodeData.nodes:
                 if not node in allNodes:  # Prevents duplicates in allNodes
                     allNodes.append(node.getCoord())
         corners = []
@@ -865,7 +871,7 @@ def queryWaypoints(
 
 # // Queries an x or y coordinate in disconnectedWaypoints
 def queryDisconnectedWaypoints(
-    disconnectedWaypoints: list[tuple[int, int]], x: int = 0, y: int = 0
+    disconnectedWaypoints: list[tuple[int, int]], x: int = -1, y: int = -1
 ) -> list[tuple[int, int]]:
     foundWaypoints = []
     for waypoint in disconnectedWaypoints:
@@ -874,10 +880,17 @@ def queryDisconnectedWaypoints(
     return foundWaypoints
 
 
-def checkForDuplicates(waypoints):
+# // Debug function to check for duplicates in the waypoint list
+def checkForDuplicates(
+    waypoints: list[
+        tuple[
+            tuple[int, int], str, tuple[int, int]
+        ]  # => [( (y1, x1), "->", (y2, x2) ), ...]
+    ],
+) -> list[tuple[tuple[int, int], str, tuple[int, int]]]:
     found = []
-    for x in waypoints:
-        ls = queryWaypoints(waypoints=waypoints, query=x[0], doubleQuery=x[1])
+    for x in waypoints:  # x => ( (y1, x1), "->", (y2, x2) )
+        ls = queryWaypoints(waypoints=waypoints, query=x[0], doubleQuery=x[2])
         if len(ls) > 1:
             found.extend(ls)
     return found  # Duplicate waypoints
@@ -889,7 +902,7 @@ def compileWaypointData(
     ],  # e.g. [ ( (y1, x1) "<->", (y2, x2) ) ]
     nodeMap: list[list[str]],
 ) -> CompiledWaypointResponse:
-    waypoints = removeDuplicateWaypoints(waypoints=waypoints)  # Remove duplicates
+    waypoints = removeDuplicateWaypoints(waypoints=waypoints)
 
     # Compile disconnectedWaypoints
     disconnectedWaypoints = []
@@ -911,12 +924,17 @@ def compileWaypointData(
         waypoints=waypoints, disconnectedWaypoints=disconnectedWaypoints
     )
 
+# like this
 
 # // Made to check if waypoints was being passed by reference, left in since theres no point in removing functioning debug code
 # // Goes through every node in the nodeMap and queries both waypoint lists with that node
 # // Outputs nodes which aren't in both lists
 # // Used purely for debugging
-def findInconsistencies(waypoints1, waypoints2, nodeMap):
+def findInconsistencies(
+    waypoints1: list[tuple[tuple[int, int], str, tuple[int, int]]],  # => [( (y1, x1), "->", (y2, x2) ), ...]
+    waypoints2: list[tuple[tuple[int, int], str, tuple[int, int]]],
+    nodeMap: list[list[str]],
+) -> None:
     for rowIndex in range(0, len(nodeMap)):
         for columnIndex in range(0, len(nodeMap[rowIndex])):
             response1 = queryWaypoints(
@@ -931,12 +949,20 @@ def findInconsistencies(waypoints1, waypoints2, nodeMap):
 
 # Converts the contents of a .csv file into a 2D list of walls and empty nodes
 def loadMap(fileName: str, invalidKeys: list[int]) -> list[list[str]]:
+    additionalRows = 3 # Fixed number of rows above the top row
+
     with open(fileName, "r", newline="") as f:
         data = csv.reader(f, delimiter=" ", quotechar="|")
         segmentedData = []
         for row in data:
             segmentedData.append([x for x in row[0].split(",")])
-        segmentedData.pop(0)
+
+        longestRow = 0
+        for row in segmentedData:
+            if len(row) > longestRow:
+                longestRow = len(row)
+        for x in range(0, additionalRows):
+            segmentedData.insert(0, [-1 for x in range(0, longestRow)])
         testGraph = []
         for row in segmentedData:
             # try: except: used as "e" was exported as an ID during terminal testing with maps
@@ -955,7 +981,7 @@ def main(map: str, origin: tuple[int, int]):
     gravityAccel = 9.81 * 15
     nodeSep = 15
 
-    enemyData = {"jumpForce": 125, "maxSpeed": (100, 37.5)}
+    enemyData = {"jumpForce": 140, "maxSpeed": (100, 50)}
 
     response = precompileGraph(
         nodeMap=testGraph,
@@ -982,8 +1008,12 @@ def main(map: str, origin: tuple[int, int]):
     pass
 
 
-def outputTestGraph(fileName: str) -> None:
+def outputTestGraph(fileName: str) -> None: # takes the path to the map, not the mapName
     data = loadMap(fileName=fileName, invalidKeys=[5, 6, 2, -1])
     for row in data:
         print(row)
-    pass
+        pass
+
+fileName = "Maps\\failsafeTest2.csv"
+outputTestGraph(fileName=fileName)
+main(map=fileName, origin=(16, 1))

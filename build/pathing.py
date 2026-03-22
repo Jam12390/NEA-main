@@ -1,7 +1,7 @@
 import math
 
 try:
-    from suvat import *
+    from Pathing.suvat import *
     import precompile
 except:
     from Pathing.suvat import *
@@ -364,6 +364,7 @@ def pathfind(
                 flattenedAbsolutePath = flattenPath(nodeMap=nodeMap, path=absolutePath)
                 requiresJump = not checkGroundPathValidity(
                     flattenedPath=flattenedAbsolutePath,
+                    strict=False
                 )
 
                 # However extend the path using absolutePath if necessary
@@ -393,15 +394,17 @@ def pathfind(
                     path=getTopDownPath(
                         graph=graph,
                         start=nearestEndWaypoint,
-                        # end=flattenPath(path=[end.getCoord()], nodeMap=nodeMap)[0], # FlattenNode
                         end=end.getCoord(),
                         directionalGraph=None,
                     ),
                 )
             )
-        else:
+            finalPath.append(end.getCoord())
+        elif checkGroundPathValidity(flattenedPath=flattenedPath):
             flattenedPath.reverse()  # Unreverse the reversed flattenedPath
             return flattenedPath
+        else:
+            return []
         return finalPath
     else:
         return []
@@ -437,17 +440,26 @@ def canFallTowardsPoint(
 
 
 # Checks if the path is reachable by only moving across the ground
-def checkGroundPathValidity(flattenedPath: list[tuple[int, int]]) -> bool:
-    currentIndex = 0
-    nextIndex = 1
-    for index in range(0, len(flattenedPath) - 1):
-        currentY = flattenedPath[currentIndex][0]
-        nextY = flattenedPath[nextIndex][0]
-        if currentY != nextY:
-            return False
-        currentIndex += 1
-        nextIndex += 1
-    return True
+def checkGroundPathValidity(flattenedPath: list[tuple[int, int]], strict: bool = True) -> bool:
+    if strict: # strict == true => the function checks if the end is reachable WITHOUT the y-coord changing
+        currentIndex = 0
+        nextIndex = 1
+        for index in range(0, len(flattenedPath) - 1):
+            currentY = flattenedPath[currentIndex][0]
+            nextY = flattenedPath[nextIndex][0]
+            if currentY != nextY:
+                return False
+            currentIndex += 1
+            nextIndex += 1
+        return True
+    else: # strict == false => checks if the end is reachable, allowing y-coord to increase (go down)
+        currentLowestY = flattenedPath[0][0]
+        for node in flattenedPath:
+            if node[0] < currentLowestY:
+                return False
+            elif node[0] > currentLowestY:
+                currentLowestY = node[0]
+        return True
 
 
 # Reduces code repetition and cleans messy min max statements
@@ -507,6 +519,8 @@ def shortenPath(path):
             path.pop(index + 1)
         else:
             index += 1  # Only increment index when an index hasn't been removed
+    #if path[len(path) - 1] != path[len(path) - 2]:
+    #    path.append(path[])
     return path
 
 
@@ -514,12 +528,20 @@ def removeCorners(path, nodeMap):
     clean = [path[0]]
     index = 1
     previousNodeGrounded = True
-    while index + 1 < len(path):
+    while index < len(path):
+        # Even though clamps are messy and make the code difficult to read,
+        # they're used so I can compare the current index to len(nodeMap) in the same if statement
         currentNodeGrounded = nodeMap[
-            clamp(inp=path[index][0] + 1, mini=0, maxi=len(nodeMap) - 1) # Clamps so I can compare the current index to len(nodeMap in the same if statement)
+            clamp(inp=path[index][0] + 1, mini=0, maxi=len(nodeMap) - 1)
         ][path[index][1]] == "#" and path[index][0] + 1 <= len(nodeMap)
-        nextAboveCurrent = path[index + 1][0] - path[index][0] < 0
-        if previousNodeGrounded and (not currentNodeGrounded) and nextAboveCurrent: # Checks if the currentNode has no floor and the next node is above the currentNode
+
+        # Only evaluates true if the node after the potential corner is in the same column
+        try:
+            nextAboveCurrent = path[index + 1][0] - path[index][0] < 0 and path[index + 2][1] == path[index + 1][1]
+        except:
+            nextAboveCurrent = True
+        # Checks if the currentNode has no floor and the next node is above the currentNode
+        if previousNodeGrounded and (not currentNodeGrounded) and nextAboveCurrent:
             pass  # Skip node addition if so
         else:
             clean.append(path[index]) # Otherwise add the node
@@ -573,8 +595,9 @@ def main(
         disconnectedWaypoints=list(disconnectedWaypoints),
     )
 
-    path = shortenPath(path=path)
-    path = removeCorners(path=path, nodeMap=nodeMap)
+    if len(path) != 0: # Avoids out of range errors if the path was invalid
+        path = shortenPath(path=path)
+        path = removeCorners(path=path, nodeMap=nodeMap)
 
     return path
 
@@ -582,10 +605,10 @@ def main(
 # testGraph = precompile.loadMap(fileName="Prototype1/transfer/Maps/a.csv", invalidKeys=[5, 6, 2, -1])
 gravityAccel = 9.81 * 15
 nodeSep = 15
-enemyData = {"jumpForce": 125, "maxSpeed": (100, 50)}
+enemyData = {"jumpForce": 140, "maxSpeed": (100, 50)}
 
 # precompile.outputTestGraph(fileName="Prototype1/transfer/Maps/a.csv")
-mapName = "Maps/testMapMoveEn.csv"
+mapName = "Maps/TestMapMove8.csv"
 testGraph = precompile.loadMap(fileName=mapName, invalidKeys=[5, 6, 2, -1])
 # precompile.outputTestGraph(mapName)
 
@@ -597,7 +620,7 @@ precompiledGraph = precompile.precompileGraph(
     origin=(16, 1),
 )
 response = main(
-    start=(12, 9), end=(11, 13), precompiledData=precompiledGraph, nodeMap=testGraph
+    start=(16, 1), end=(4, 7), precompiledData=precompiledGraph, nodeMap=testGraph
 )
 for x in response:
     testGraph[x[0]][x[1]] = "x"

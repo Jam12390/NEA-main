@@ -22,11 +22,11 @@ FPS = 60
 
 mapName = "testMapMoveEn"
 PLAYERSIZE = pygame.Vector2(50, 50)
-TILESIZE = 76
+TILESIZE = pygame.Vector2(76, 76)
 
-# minimum value for movement to be registered
-# too low of a value causes problems with the player coming to a stop
-# too high of a value increases the chance of issues with absoluteCoordinate
+# Minimum value for movement to be registered
+# Too low of a value causes problems with the player coming to a stop
+# Too high of a value increases the chance of issues with absoluteCoordinate
 MOVEMENTTOLERANCE = pygame.Vector2(1, 0.5)
 
 mapResponse = None
@@ -37,7 +37,7 @@ enemies = None
 items = None
 
 # Default player to any existing player
-# only used during first boot during the redraw section of mainMenu()
+# Only used during first boot during the redraw section of mainMenu()
 player = Player(
        FPS=FPS,
        jumpForce=allCharacters[0]["jumpForce"],  # pixels/second
@@ -57,7 +57,7 @@ player = Player(
        startingWeaponID=0,
    )
 
-# current game state (in terms of UI)
+# Current game state (in terms of UI)
 inMainmenu = False
 
 inCharacterSelect = False
@@ -65,7 +65,7 @@ inCharacterSelect = False
 inDeathScreen = False
 
 def setup(mapName: str):
-    # needs to affect variables outside of it's default scope
+    # Needs to affect variables outside of it's local scope
     global mapResponse
     global loadedMap
     global precompiledGraph
@@ -88,32 +88,32 @@ def setup(mapName: str):
         },
         tileSize=TILESIZE,
         baseScreenDimensions=pygame.Vector2(screenWidth, screenHeight)
-    ) # => (tiles, items, startingPosition, list[enemyStartingPositions])
+    )
 
     enemyData = {
         "jumpForce": 130,
         "maxSpeed": (50, 50)
-    } # some default values for enemyData, can be changed in the future
+    } # Some default values for enemyData, can be changed in the future
 
-    invalidKeys = [5, 6, 2, -1] # tile IDs which shouldn't be considered as walls (e.g. Enemies)
+    invalidKeys = [5, 6, 2, -1] # Tile IDs which shouldn't be considered as walls (e.g. Enemies)
 
-    # contains a 2D list of walls and empty spaces (same as nodeMap in precompile.py)
+    # Contains a 2D list of walls and empty spaces (same as nodeMap in precompile.py)
     loadedMap = precompile.loadMap(fileName=mapPath, invalidKeys=invalidKeys)
 
-    #precompiles the graph based on the starting point stored in mapResponse[2] TODO: update origin to be variable based on mapResponse[2]
+    # Precompiles the graph based on the starting point stored in mapResponse.STARTPOS
     precompiledGraph = precompile.precompileGraph(
         nodeMap=loadedMap,
         nodeSep=15,
         gravity=9.81 * 15,
         enemyData=enemyData,
-        origin=mapResponse.STARTPOS // TILESIZE, # assuming tiles are square
+        origin=mapResponse.STARTPOS // TILESIZE,
     )
 
-    walls = mapResponse.MAPDATA#mapResponse[0]
-    items = mapResponse.ITEMS#mapResponse[1]
+    walls = mapResponse.MAPDATA
+    items = mapResponse.ITEMS
 
     enemies = pygame.sprite.Group()
-    for enemyPos in mapResponse.ENEMYSTARTPOSITIONS: # iterate through where enemies should start
+    for enemyPos in mapResponse.ENEMYSTARTPOSITIONS: # Iterate through where enemies should start
         enemies.add( # and make a new object for each position
             Enemy(
                 FPS=FPS,
@@ -129,22 +129,17 @@ def setup(mapName: str):
                 pVelocityCap=pygame.Vector2(enemyData["maxSpeed"]),
                 startingVelocity=pygame.Vector2(0, 0),
                 pSize=pygame.Vector2(50, 50),
-                pIgnoreYFriction=True, # helps with simplifying pathing (no need to simulate friction when jumping)
+                pIgnoreYFriction=True, # Helps with simplifying pathing (no need to simulate friction when jumping)
+                TILESIZE=TILESIZE
             )
         )
 
-    #######REWORK MAP
-    #for x in enemies:
-    #    x.absoluteCoordinate.x += TILESIZE
-        #x.absoluteCoordinate.y -= mapResponse[3].y
-        #x.absoluteCoordinate.x -= screenWidth / 2
-
-def outputEnemyCoords(): # debug procedure
+def outputEnemyCoords(): # Debug procedure
     global enemies
     for enemy in enemies:
         print(enemy.absoluteCoordinate)
 
-def outputPathingData(): # debug procedure for devs - outputs data for all enemies who are pathing
+def outputPathingData(): # Debug procedure - outputs data for all enemies who are pathing
     global enemies
 
     print(f"Player:")
@@ -163,28 +158,30 @@ def outputPathingData(): # debug procedure for devs - outputs data for all enemi
             print(f"Y: {enemy._yForces}")
             print("---\n")
 
-def debugCollide():
+def debugCollide(): # Prints coordinates of enemies currently colliding with the player
     for e in enemies:
         if pygame.Rect.colliderect(player.rect, e.sightRect):
             print(f"Player colliding with enemy at {e.absoluteCoordinate}")
 
-# initialise game state variables
+# Initialise game state variables
 mainLoopRunning = True
 
 inventoryOpen = False
 
 previousBlockedMotion = ()
 
-#debug variables - determines whether data is output when debug keybinds are pressed
-debug = True
+# Debug variables - determines whether data is output when debug keybinds are pressed
+# Global toggle
+debug = False
 
-observePaths = True
-observeNodes = True
-observeVelocity = True
-pauseOnObservation = True
+# Specific toggles
+observePaths = False
+observeNodes = False
+observeVelocity = False
+pauseOnObservation = False
 
 def mainloop():
-    # mainloop needs to change variables for all other procedures
+    # Mainloop needs to change variables for all other procedures
     global inventoryOpen
     global paused
     global inDeathScreen
@@ -193,7 +190,7 @@ def mainloop():
     global observePaths
     global observeNodes
     global pauseOnObservation
-    # this is why all UI screens are in main.py. Separating them into different files would be too much of an architectural change
+    # This is why all UI screens are in main.py. Separating them into different files would be too much of an architectural change
 
     pygame.display.set_caption("Main loop")
 
@@ -201,7 +198,7 @@ def mainloop():
         mainmenu()
 
     while mainLoopRunning:
-        clock.tick(FPS) # next frame
+        clock.tick(FPS) # Next frame
 
         if inCharacterSelect:
             characterSelect()
@@ -242,8 +239,8 @@ def mainloop():
                         print("---")
                     print("----------------------------")
                     if pauseOnObservation:
-                        pass # this is where a breakpoint would be placed if pauseOnObservation was true
-                        # in any other situation pausing the program would be sufficient for variable watch
+                        pass # This is where a breakpoint would be placed if pauseOnObservation was true
+                        # In any other situation pausing the program would be sufficient for variable watch
                         # however in this case the program would likely pause in PhysicsObject.py or another file, making some variables out of scope
                 if event.key == pygame.K_o and debug:
                     pauseOnObservation = not pauseOnObservation # toggle whether the breakpoint should trigger, assuming debug == true
@@ -323,12 +320,12 @@ def mainloop():
                     player.fastFalling = False
 
             screen.fill((0, 0, 0))  # rgb value for black background - could be changed to an image by future devs
-            # if so, this would be moved to redraw() and would use pygame.image.smoothscale(pygame.image.load(background), screenSize) instead of an rgb value
+            # If so, this would be moved to redraw() and would use pygame.image.smoothscale(pygame.image.load(background), screenSize) instead of an rgb value
 
-            # update the player and get it's displacement
+            # Update the player and get it's displacement
             playerMoved = player.update(collidableObjects=[walls, items, enemies], enemies=enemies)
 
-            # i would use in range() however range() only accepts integers
+            # I would use in range() however range() only accepts integers
             if -MOVEMENTTOLERANCE.x <= playerMoved.x and playerMoved.x <= MOVEMENTTOLERANCE.x:
                 playerMoved.x = 0
             if -MOVEMENTTOLERANCE.y <= playerMoved.y and playerMoved.y <= MOVEMENTTOLERANCE.y:
@@ -344,7 +341,7 @@ def mainloop():
                 nodeSep=30,
                 target=player,
                 playerRect=player.rect,
-            ) # update enemies after player
+            ) # Update enemies after player
             items.update()
 
             if "u" in player.blockedMotion:
@@ -380,14 +377,14 @@ def mainloop():
             pygame.display.flip()
 
 
-def redraw():  # it's important to note that redraw() DOES NOT update() any of the objects it's drawing
-    player.rect.center = (screenWidth / 2, screenHeight / 2) # recenter player (if it somehow became uncentred)
-    player.currentNode = ( # recalculate currentNode for pathing
+def redraw():  # It's important to note that redraw() DOES NOT update() any of the objects it's drawing
+    player.rect.center = (screenWidth / 2, screenHeight / 2) # Recenter player (if it somehow became uncentred)
+    player.currentNode = ( # Recalculate currentNode for pathing
         int((player.absoluteCoordinate.y) // 75),  # (y, x)
         int((player.absoluteCoordinate.x) // 75),
     )
 
-    # draw sprites here
+    # Draw sprites here
 
     screen.blit(player.image, player.rect)
 
@@ -398,16 +395,17 @@ def redraw():  # it's important to note that redraw() DOES NOT update() any of t
         screen.blit(sprite.image, sprite.rect)
         
     walls.draw(screen)
-    enemies.draw(screen)
 
     for item in items:
         screen.blit(item.image, item.rect)
         if item.UIWindow.shown:
             screen.blit(item.UIWindow.surface, item.UIWindow.rect)
 
+    enemies.draw(screen)
+
     screen.blit(player.healthBar.surface, player.healthBar.rect)
 
-# python doesn't support inline functions, which I would use in inventory
+# Python doesn't support inline functions, which I would use in inventory
 # Therefore nullFunc() exists to be called when func is a required parameter
 def nullFunc():
     pass
@@ -430,7 +428,7 @@ def inventory():
     global paused
 
     # Colours to change later if needed
-    textColour = (255, 255, 255)  # white
+    textColour = (255, 255, 255)
     backgroundColour = (125, 125, 125)
     itemHoverColour = (100, 100, 100)
 
@@ -482,7 +480,6 @@ def inventory():
         screen.blit(dim, (0, 0))
 
         background = pygame.Surface((screenWidth - 100, screenHeight - 100))
-        # background.fill((125, 125, 125, 255))
 
         # Base Background
         pygame.draw.rect(
@@ -529,17 +526,6 @@ def inventory():
         )
 
         # Weapon Image
-        scaledRect = pygame.transform.smoothscale(
-            pygame.image.load(allWeapons[player.weapon.ID]["imgPath"]),
-            (player.weapon.rect.width * 20, player.weapon.rect.height * 20),
-        )
-        weaponRect = pygame.Surface.get_rect(scaledRect)
-        weaponRect.center = (
-            (screenWidth - 100) // 6,
-            int(screenHeight - 100) // 2 + 50,
-        )
-        weaponRect.center += allWeapons[player.weapon.ID]["inventoryOffset"]
-
         weaponText = [f"{allWeapons[player.weapon.ID]["name"]}:"]
         weaponText.extend(UI.wrapText(
             plainText=allWeapons[player.weapon.ID]["description"], wordsPerLine=5
@@ -547,13 +533,14 @@ def inventory():
 
         # I'm reusing UI.ImageButton instead of making another "Hover" class since both ImageButton
         # and HoverImage would have near identical logic + code
+        imageScale = allWeapons[player.weapon.ID]["inventoryScaleRatio"]
         weapon = UI.ImageButton(
             position=pygame.Vector2(
                 (screenWidth - 100) // 6, int(screenHeight - 100) // 2
             ),
             
             size=pygame.Vector2(
-                player.weapon.rect.width * 3.75, player.weapon.rect.height * 20
+                player.weapon.rect.width * imageScale.x, player.weapon.rect.height * imageScale.y
             ),
             imgPath=allWeapons[player.weapon.ID]["imgPath"],
             text=weaponText,
@@ -575,11 +562,8 @@ def inventory():
         if weapon.hoveredOver:
             background.blit(weapon.description.background, weapon.description.rect)
 
-        #startingPos = [(screenWidth - 100) // 3 + 100, 150]
-
         # Iterate through and .update() item titles
         for itemIndex in range(0, len(itemHeaders)):
-            # background.blit(itemHeaders[itemIndex], (startingPos[0], startingPos[1]))
             itemHeaders[itemIndex].update(mousePos)
             background.blit(itemHeaders[itemIndex].surface, itemHeaders[itemIndex].rect)
             # Display the description of any hovered over items
@@ -731,7 +715,7 @@ def mainmenu():
                 textSize=40
             )
         )
-        startingPos.y += 90#renderedText[0].size.y + 25
+        startingPos.y += 90
 
     while inMainmenu:
         # Redraw paused game
