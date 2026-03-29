@@ -378,8 +378,8 @@ class PhysicsObject(pygame.sprite.Sprite):
             if collidingObjects["r"] != None:
                 self.absoluteCoordinate.x = (
                     collidingObjects["r"].absoluteCoordinate.x
-                    + self.size.x // 2
-                    + collidingObjects["r"].rect.width // 2
+                    - self.size.x // 2
+                    - collidingObjects["r"].rect.width // 2
                 )
         return totalDiff
 

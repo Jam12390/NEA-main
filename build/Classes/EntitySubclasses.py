@@ -38,7 +38,7 @@ class Player(Entity.Entity):
         tags: list[str] = ["None"],
         startingWeaponID: int = 0,
         healthBar=UI.HealthBar(
-            pSize=pygame.Vector2(400, 50),
+            size=pygame.Vector2(400, 50),
             position=pygame.Vector2(25, 725),
             maxHP=100,
             currentHP=100,
@@ -60,8 +60,7 @@ class Player(Entity.Entity):
             startingPosition=startingPosition,
             pVelocityCap=pVelocityCap,
             startingVelocity=startingVelocity,
-            tags=tags,
-            screenDimensions=screenDimensions
+            tags=tags
         )
         self.inventory = {}
         self.fastFalling = False
@@ -273,12 +272,11 @@ class Enemy(Entity.Entity):
         startingPosition,
         pVelocityCap,
         startingVelocity=...,
-        pAggroRange=300,
+        pAggroRange=500,
         pFacing="r",
         weaponID=0,
         tags=["Enemy"],
         pIgnoreYFriction=False,
-        screenDimensions: tuple[int, int] = (1000, 800),
         TILESIZE: pygame.Vector2 = pygame.Vector2(76, 76)
     ):
         super().__init__(
@@ -295,8 +293,7 @@ class Enemy(Entity.Entity):
             pVelocityCap,
             startingVelocity,
             tags,
-            pIgnoreYFriction,
-            screenDimensions=screenDimensions
+            pIgnoreYFriction
         )
         self.__aggroRange = pAggroRange
         self.__aggrod = False
@@ -327,6 +324,7 @@ class Enemy(Entity.Entity):
         self,
         collidableObjects,
         precompiledData,
+        TILESIZEX: int,
         nodeMap,
         target,
         playerRect,
@@ -353,6 +351,7 @@ class Enemy(Entity.Entity):
                 self.path(
                     target=target,
                     precompiledData=precompiledData,
+                    TILESIZEX=TILESIZEX,
                     nodeMap=nodeMap
                 )
                 self.__framesSinceLastPath = 0
@@ -387,8 +386,8 @@ class Enemy(Entity.Entity):
 
             # Updating currentNode
             self.currentNode = (
-                int((self.absoluteCoordinate.y) // self.__TILESIZE.x),  # (y, x)
-                int(((self.absoluteCoordinate.x) // self.__TILESIZE.y)),
+                int((self.absoluteCoordinate.y) // self.__TILESIZE.y),  # (y, x)
+                int(((self.absoluteCoordinate.x) // self.__TILESIZE.x)),
             )
         else:
             # Resetting values to default if the enemy isn't simulated

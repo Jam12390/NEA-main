@@ -20,7 +20,7 @@ paused = False
 
 FPS = 60
 
-mapName = "testMapMoveEn"
+mapName = "testMapMove4"
 PLAYERSIZE = pygame.Vector2(50, 50)
 TILESIZE = pygame.Vector2(76, 76)
 
@@ -58,7 +58,7 @@ player = Player(
    )
 
 # Current game state (in terms of UI)
-inMainmenu = False
+inMainmenu = True
 
 inCharacterSelect = False
 
@@ -74,6 +74,8 @@ def setup(mapName: str):
     global items
     global inDeathScreen
 
+    print("Setup Ran")
+
     inDeathScreen = False
 
     mapPath = f"Maps/{mapName}.csv"
@@ -86,7 +88,7 @@ def setup(mapName: str):
             "ITEMKEY": 6,
             "ENEMYKEY": 2
         },
-        tileSize=TILESIZE,
+        TILESIZE=TILESIZE,
         baseScreenDimensions=pygame.Vector2(screenWidth, screenHeight)
     )
 
@@ -106,11 +108,16 @@ def setup(mapName: str):
         nodeSep=15,
         gravity=9.81 * 15,
         enemyData=enemyData,
-        origin=mapResponse.STARTPOS // TILESIZE,
+        origin=pygame.Vector2(
+            x=mapResponse.STARTPOS.x // TILESIZE.x,
+            y=mapResponse.STARTPOS.y // TILESIZE.y
+        ),
     )
 
     walls = mapResponse.MAPDATA
     items = mapResponse.ITEMS
+
+    playerDistFromCentre = mapResponse.PLAYERDISTFROMCENTRE
 
     enemies = pygame.sprite.Group()
     for enemyPos in mapResponse.ENEMYSTARTPOSITIONS: # Iterate through where enemies should start
@@ -133,6 +140,8 @@ def setup(mapName: str):
                 TILESIZE=TILESIZE
             )
         )
+    for enemy in enemies:
+        enemy.absoluteCoordinate -= playerDistFromCentre
 
 def outputEnemyCoords(): # Debug procedure
     global enemies
@@ -172,13 +181,13 @@ previousBlockedMotion = ()
 
 # Debug variables - determines whether data is output when debug keybinds are pressed
 # Global toggle
-debug = False
+debug = True
 
 # Specific toggles
-observePaths = False
-observeNodes = False
+observePaths = True
+observeNodes = True
 observeVelocity = False
-pauseOnObservation = False
+pauseOnObservation = True
 
 def mainloop():
     # Mainloop needs to change variables for all other procedures
@@ -230,25 +239,27 @@ def mainloop():
                     print("--------")
                     for enemy in enemies:
                         if observePaths:
-                            print(f"Enemy: {enemy.currentPath}")
+                            print(f"Enemy: Path: {enemy.currentPath}")
                         if observeNodes:
-                            print(f"Enemy: {enemy.currentNode}")
+                            print(f"Enemy: Node: {enemy.currentNode}")
                         if observeVelocity:
-                            print(f"Enemy: {enemy._velocity}")
-                            print(f"Enemy: {enemy._xForces}")
+                            print(f"Enemy: Vel: {enemy._velocity}")
+                            print(f"Enemy: xForces: {enemy._xForces}")
                         print("---")
-                    print("----------------------------")
                     if pauseOnObservation:
                         pass # This is where a breakpoint would be placed if pauseOnObservation was true
                         # In any other situation pausing the program would be sufficient for variable watch
                         # however in this case the program would likely pause in PhysicsObject.py or another file, making some variables out of scope
                 if event.key == pygame.K_o and debug:
                     pauseOnObservation = not pauseOnObservation # toggle whether the breakpoint should trigger, assuming debug == true
+                    print(f"Pause: {pauseOnObservation}")
 
                 if event.key == pygame.K_n:
                     observeNodes = not observeNodes # toggle if nodes should be outputted during debug code
+                    print(f"ObserveNodes: {observeNodes}")
                 if event.key == pygame.K_m:
                     observePaths = not observePaths # toggle if currentPaths should be outputted during debug code
+                    print(f"ObservePaths: {observePaths}")
                     
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not player.weapon.currentlyAttacking:
@@ -337,8 +348,8 @@ def mainloop():
             enemies.update(
                 collidableObjects=[walls],
                 precompiledData=precompiledGraph,
+                TILESIZEX=TILESIZE.x,
                 nodeMap=loadedMap,
-                nodeSep=30,
                 target=player,
                 playerRect=player.rect,
             ) # Update enemies after player
@@ -363,6 +374,7 @@ def mainloop():
             for enemy in enemies:
                 enemy.rect.centerx -= playerMoved.x
                 enemy.rect.centery -= playerMoved.y
+                #enemy.absoluteCoordinate -= playerMoved
                 enemy.sightRect.center = enemy.rect.center
 
             # update HUD
@@ -380,8 +392,8 @@ def mainloop():
 def redraw():  # It's important to note that redraw() DOES NOT update() any of the objects it's drawing
     player.rect.center = (screenWidth / 2, screenHeight / 2) # Recenter player (if it somehow became uncentred)
     player.currentNode = ( # Recalculate currentNode for pathing
-        int((player.absoluteCoordinate.y) // 75),  # (y, x)
-        int((player.absoluteCoordinate.x) // 75),
+        int((player.absoluteCoordinate.y) // TILESIZE.x),  # (y, x)
+        int((player.absoluteCoordinate.x) // TILESIZE.y),
     )
 
     # Draw sprites here
@@ -446,7 +458,7 @@ def inventory():
     for ID in player.inventory.keys():
         desc = [f"{allItems[ID]["name"]}:"]
         desc.extend(UI.wrapText(plainText=allItems[ID]["description"], wordsPerLine=5))
-        desc.extend([f"Replaces: {allItems[ID]["replaces"]}", f"Effects: {allItems[ID]["effects"]}"])
+        desc.extend([f"Replaces: {allItems[int(allItems[ID]["replaces"])]["name"]}", f"Effects: {allItems[ID]["effects"]}"])
         itemDescriptions[ID] = desc
 
     itemHeaders = [
@@ -692,8 +704,8 @@ def mainmenu():
     titleText = pygame.font.SysFont("Calibri", 90).render(
         "'Blended'", True, (255, 255, 255)
     )
-    subtitleText = pygame.font.SysFont("Calibri", 15).render(
-        "AKA the skeleton sidescroller template i worked so hard on", True, (255, 255, 255)
+    subtitleText = pygame.font.SysFont("Calibri", 25).render(
+        "The 2D Skeleton Sidescroller", True, (255, 255, 255)
     )
 
     # Function assignments
@@ -703,7 +715,7 @@ def mainmenu():
     renderedText = []
 
     # Starting position of buttons (like in pauseMenu())
-    startingPos = pygame.Vector2(25, screenHeight - (75 * len(buttonText)) - 50)
+    startingPos = pygame.Vector2(10, screenHeight - (75 * len(buttonText)) - 40)
 
     # Create individual TextButton objects for each text in buttonText
     for index in range(0, len(buttonText)):
@@ -922,6 +934,13 @@ def setPlayer(ID: int):
         startingVelocity=pygame.math.Vector2(0, 0),
         pVelocityCap=pygame.math.Vector2(100, 100),
         startingWeaponID=0,
+        healthBar=UI.HealthBar(
+            size=pygame.Vector2(400, 50),
+            position=pygame.Vector2(25, 725),
+            fontName="Calibri",
+            maxHP=allCharacters[ID]["hp"],
+            currentHP=allCharacters[ID]["hp"]
+        )
     )
     
     player.healthBar.resetHP() # Make sure the player always starts with their max HP
@@ -946,5 +965,6 @@ def exitCharacterSelect():
 
 # Run setup with hardcoded mapName
 setup(mapName=mapName)
+setPlayer(ID=0)
 
 mainloop()

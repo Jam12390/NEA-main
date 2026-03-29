@@ -1,14 +1,12 @@
 import math
-import time
 
 try:
-    from transfer.suvat import *
-except:
     from suvat import *
-try:
-    import transfer.precompile as precompile
-except:
     import precompile
+except:
+    from Pathing.suvat import *
+    import Pathing.precompile as precompile
+
 from typing import Optional, Union
 
 
@@ -34,7 +32,7 @@ class Stack:
 
 class TopDownNode:
     def __init__(self, coord, previousNode, end, shortestDistance) -> None:
-        self.coord = coord
+        self.coord = coord  # (y, x)
         self.shortestDistance = shortestDistance
         self.HEURISTIC = getHeuristic(start=coord, end=end)
         self.previousNode = previousNode
@@ -42,7 +40,7 @@ class TopDownNode:
         self.visited = False
 
 
-def getHeuristic(start, end, axis: Optional[str] = None) -> float: # In terms of nodes
+def getHeuristic(start, end, axis: Optional[str] = None) -> float:  # In terms of nodes
     if axis == None or not (axis == "x" or axis == "y"):
         # // This should never fail, however rarely start or end is passed as None instead of their (y, x) form
         try:
@@ -100,7 +98,7 @@ def getAdjacentNodes(
             elif not node.coord in potentialPath:
                 adjacentNodes.append(potentialPath[0])
     else:
-        # // This is a list of tuple[bool, coord] in the form presence => [left, right, up, down]
+        # // This is a list of tuple[bool, coord] in the form: presence => [left, right, up, down]
         presence = [  # (Exists, coord)
             (
                 (node.coord[0], node.coord[1] - 1) in graph,
@@ -120,10 +118,10 @@ def getAdjacentNodes(
             ),
         ]
         for nodeIndex in range(0, len(presence)):
-            if presence[nodeIndex][
-                0
-            ]: # // If the coordinate exists
-                adjacentNodes.append(presence[nodeIndex][1])  # // Add it to the adjacentNodes
+            if presence[nodeIndex][0]:  # // If the coordinate exists
+                adjacentNodes.append(
+                    presence[nodeIndex][1]
+                )  # // Add it to the adjacentNodes
     return adjacentNodes
 
 
@@ -137,8 +135,8 @@ def getNextNodeToVisit(nodes: list[TopDownNode]) -> int:
 
     # Check for which exit condition we triggered
     if index >= len(nodes):
-        return -1 # For out of range
-    return index # For unvisited node found
+        return -1  # For out of range
+    return index  # For unvisited node found
 
 
 # // Gets the index of a TopDownNode object in a list based on a coordinate query
@@ -146,7 +144,7 @@ def getNodeFromCoord(nodes: list[TopDownNode], coord):
     for index, node in enumerate(nodes):
         if node.coord == coord:
             return index
-    return -1 # Returns -1 if nothing was found
+    return -1  # Returns -1 if nothing was found
 
 
 # // Recursive function which updates the shortestDistance of its target's nextNodes,
@@ -156,18 +154,19 @@ def cascadeUpdate(nodes: list[TopDownNode], startNode: TopDownNode):
         index = getNodeFromCoord(nodes=nodes, coord=nextNode)
         nodes[index].shortestDistance = startNode.shortestDistance + 1
         nodes = cascadeUpdate(nodes=nodes, startNode=nodes[index])
-    return nodes # exit condition
+    return nodes  # exit condition
 
 
 def getTopDownPath(
-    graph,
-    start,
-    end,
+    graph: list[tuple[int, int]],  # Unsorted list of valid coordinates
+    start: tuple[int, int],
+    end: tuple[int, int],
     directionalGraph: Optional[
-        list[tuple[tuple[int, int], str, tuple[int, int]]] # // directionalGraph => [((y, x), "->", (y2, x2))] | None
-    ] = None, # // Defaults to None so directionalGraph=None doesn't have to be passed each time getTopDownPath is called
-    preferDirection: Optional[str] = None
-) -> list[tuple[int, int]]: # => [(y1, x1), (y2, x2), ...]
+        list[
+            tuple[tuple[int, int], str, tuple[int, int]]
+        ]  # // directionalGraph => [((y, x), "->", (y2, x2))] | None
+    ] = None,  # // Defaults to None so directionalGraph=None doesn't have to be passed each time getTopDownPath is called
+) -> list[tuple[int, int]]:  # => [(y1, x1), (y2, x2), ...]
 
     # // Same reasons as getAdjacentNodes()
     if directionalGraph != None:
@@ -178,7 +177,7 @@ def getTopDownPath(
     nodes = list[TopDownNode](
         [TopDownNode(coord=start, shortestDistance=0, previousNode=None, end=end)]
     )
-    currentNode = nodes[0] # Starting node
+    currentNode = nodes[0]  # Starting node
     path = []
     # A* ends when the end is reached any way
     while end != currentNode.coord and not end in currentNode.nextNodes:
@@ -188,7 +187,7 @@ def getTopDownPath(
             # No path
             return []
         currentNode = nodes[currentNodeIndex]
-        adjacentNodes = getAdjacentNodes( # // Which can be travelled to
+        adjacentNodes = getAdjacentNodes(  # // Which can be travelled to
             graph=graph, node=currentNode, directionalGraph=directionalGraph
         )
         for node in adjacentNodes:
@@ -201,30 +200,37 @@ def getTopDownPath(
             else:
                 # Otherwise just add 1 (since in a grid each node is 1 unit apart)
                 newDistance = float(currentNode.shortestDistance + 1)
-            if index == -1: # TopDownNode object doesn't exist in nodes
-                nodes.append( # // So create a new one for the node
+            if index == -1:  # TopDownNode object doesn't exist in nodes
+                nodes.append(  # // So create a new one for the node
                     TopDownNode(
                         coord=node,
                         previousNode=currentNode,
                         end=end,
                         shortestDistance=newDistance,
                     )
-                ) 
-                nodes[currentNodeIndex].nextNodes.append(node) # Add the coordinate to the currentNode's nextNodes
+                )
+                nodes[currentNodeIndex].nextNodes.append(
+                    node
+                )  # Add the coordinate to the currentNode's nextNodes
             elif newDistance < nodes[index].shortestDistance:
-                    nodes[index].shortestDistance = newDistance
-                    overriddenPreviousNodeIndex = getNodeFromCoord( # The node which used to lead to this node
+                nodes[index].shortestDistance = newDistance
+                overriddenPreviousNodeIndex = (
+                    getNodeFromCoord(  # The node which used to lead to this node
                         nodes=nodes, coord=nodes[index].previousNode.coord
                     )
-                    if (
+                )
+                if (
+                    nodes[index].coord in nodes[overriddenPreviousNodeIndex].nextNodes
+                ):  # Some verification to make sure the previous node still leads to this node
+                    nodes[
+                        overriddenPreviousNodeIndex
+                    ].nextNodes.remove(  # // Since remove() returns an error if its argument isn't found
                         nodes[index].coord
-                        in nodes[overriddenPreviousNodeIndex].nextNodes
-                    ): # Some verification to make sure the previous node still leads to this node
-                        nodes[overriddenPreviousNodeIndex].nextNodes.remove( # // Since remove() returns an error if its argument isn't found
-                            nodes[index].coord
-                        )
-                    nodes = cascadeUpdate(nodes=nodes, startNode=nodes[index]) # Cascade update the shortest distance for all previous nodes
-        nodes[currentNodeIndex].visited = True # And mark this node as visited
+                    )
+                nodes = cascadeUpdate(
+                    nodes=nodes, startNode=nodes[index]
+                )  # Cascade update the shortest distance for all previous nodes
+        nodes[currentNodeIndex].visited = True  # And mark this node as visited
 
     # Initialising the stack
     stack = Stack()
@@ -244,18 +250,21 @@ def getTopDownPath(
 
     return path
 
+
 # // The time complexity of O(n^2) isn't great and could be a point to improve upon in the future
 # // However, since paths tend to be short, the time complexity is closer to being linear rather than
 # // a quadratic with a high n
 def flattenPath(nodeMap, path):
     flattenedPath = []
-    for node in path: # Iterate through the path
+    for node in path:
         currentCo = list(node)
         # While the lower node isn't a wall
         while nodeMap[min(len(nodeMap), int(currentCo[0] + 1))][
             int(currentCo[1])
-        ] == " " and currentCo[0] < len(nodeMap): # Limit currentCo to nodeMap's length if there are no lower floors
-            currentCo[0] += 1 # Increment row
+        ] == " " and currentCo[0] < len(
+            nodeMap
+        ):  # Limit currentCo to nodeMap's length if there are no lower floors
+            currentCo[0] += 1  # Increment row
         flattenedPath.append(tuple(currentCo))
     return flattenedPath
 
@@ -263,26 +272,25 @@ def flattenPath(nodeMap, path):
 def pathfind(
     graph: list[tuple[int, int]],
     nodeMap: list[list[str]],
-    nodeSep: int,
-    start: tuple[int, int], # (y, x)
-    end: tuple[int, int], # (y, x)
+    start: tuple[int, int],  # (y, x)
+    end: tuple[int, int],  # (y, x)
     waypoints: list[tuple[tuple, str, tuple]],
     disconnectedWaypoints: list[tuple[int, int]],
-    jumpForce: float,
-    gravity: float
 ):
     # // Instead of using a messy if statement to check if the start and end nodes exist in the graph,
     # // I can reuse Point's isValid() method without any impact on the big O space complexity
     rangeCheckSt = precompile.Point(x=start[1], y=start[0], nodeMap=nodeMap)
     rangeCheckEn = precompile.Point(x=end[1], y=end[0], nodeMap=nodeMap)
     if not (rangeCheckSt.isValid() and rangeCheckEn.isValid()):
-        return [] # // Returns an empty (invalid) path if either point isn't valid
+        return []  # // Returns an empty (invalid) path if either point isn't valid
 
     try:
         start = precompile.getLowerNodes(
             topNodes=[precompile.Point(x=start[1], y=start[0], nodeMap=nodeMap)],
             nodeMap=nodeMap,
-        ).FLOORNODES[0] # Both the start and the end nodes should begin on the ground
+        ).FLOORNODES[
+            0
+        ]  # Both the start and end nodes should begin on the ground
     except:
         pass
 
@@ -306,11 +314,11 @@ def pathfind(
         flattenedPath = flattenPath(nodeMap, absolutePath)
         nearestStartWaypoint = None
         nearestEndWaypoint = None
-        for node in flattenedPath: # Iterate through the path
+        for node in flattenedPath:
             if node in disconnectedWaypoints and nearestStartWaypoint == None:
-                # And find the nearest node which is disconnectedWaypoints
+                # Find the nearest node which is disconnectedWaypoints
                 nearestStartWaypoint = node
-                break # Exit the loop early to save time
+                break  # Exit the loop early to save time
         flattenedPath.reverse()
         flattenedReversePath = flattenedPath
         for node in flattenedReversePath:
@@ -322,13 +330,15 @@ def pathfind(
 
         # Get a path of waypoints // (since it's known they can reach each other)
         waypointPath = getTopDownPath(
-            graph=graph, # Unsorted list of valid nodes
+            graph=graph,  # Unsorted list of valid nodes
             start=nearestStartWaypoint,
             end=nearestEndWaypoint,
             directionalGraph=waypoints,
         )
         finalPath = []
-        if len(waypointPath) != 0 and not None in waypointPath: # Logic for if a path of waypoints exists
+        if (
+            len(waypointPath) != 0 and not None in waypointPath
+        ):  # Logic for if a path of waypoints exists
             # // Since it's known from precompile that waypoints connect to each other,
             # // The final path is the absolute paths of all the waypoints connected to each other
 
@@ -337,7 +347,7 @@ def pathfind(
                 start=start.getCoord(),
                 end=nearestStartWaypoint,
                 directionalGraph=None,
-            ) # Start with the first waypoint
+            )  # Start with the first waypoint
 
             # Iterating through and connecting waypoints
             for nodeIndex in range(0, len(waypointPath) - 1):
@@ -345,38 +355,39 @@ def pathfind(
                 startWaypoint = (int(startWaypoint[0]), int(startWaypoint[1]))
                 endWaypoint = waypointPath[nodeIndex + 1]
                 endWaypoint = (int(endWaypoint[0]), int(endWaypoint[1]))
-                if abs(startWaypoint[1] - endWaypoint[1]) > 1:
-                    # // Adding a diagonal node to the path is a simple way to indicate a jump
-                    if endWaypoint[1] - startWaypoint[1] > 0 and nodeMap[startWaypoint[0] - 1][startWaypoint[1] + 1] != "#": # Going right and the top right adjacent node is free
+
+                absolutePath = getTopDownPath(
+                    graph=graph, start=startWaypoint, end=endWaypoint
+                )
+
+                # Take the lowest path whenever possible
+                flattenedAbsolutePath = flattenPath(nodeMap=nodeMap, path=absolutePath)
+                requiresJump = not checkGroundPathValidity(
+                    flattenedPath=flattenedAbsolutePath,
+                    strict=False
+                )
+
+                # However extend the path using absolutePath if necessary
+                # // This could be removed to improve performance, however its current impact is negligible
+                if requiresJump and abs(endWaypoint[1] - startWaypoint[1]) > 2:
+                    # // Adding a diagonal node to the path is a simple way to indicate a jump since the enemy only jumps with its max power
+                    finalPath.append(startWaypoint)
+                    if (
+                        endWaypoint[1] - startWaypoint[1] > 0
+                        and nodeMap[startWaypoint[0] - 1][startWaypoint[1] + 1] != "#"
+                    ):  # Going right and the top right adjacent node is free
                         finalPath.append((startWaypoint[0] - 1, startWaypoint[1] + 1))
-                    elif endWaypoint[1] - startWaypoint[1] < 0 and nodeMap[startWaypoint[0] - 1][startWaypoint[1] - 1] != "#": # Going left and the top left adjacent node is free
-                        finalPath.append((startWaypoint[0] - 1, startWaypoint[1] - 1))
+                    elif (
+                        endWaypoint[1] - startWaypoint[1] < 0
+                        and nodeMap[startWaypoint[0] - 1][startWaypoint[1] - 1] != "#"
+                    ):  # Going left and the top left adjacent node is free
+                        finalPath.append(
+                            tuple((startWaypoint[0] - 1, startWaypoint[1] - 1))
+                        )
+                elif requiresJump:
+                    finalPath.extend(absolutePath)
                 else:
-                    absolutePath = getTopDownPath(
-                        graph=graph,
-                        start=startWaypoint,
-                        end=endWaypoint
-                    )
-
-                    # Take the lowest path whenever possible
-                    flattenedAbsolutePath = flattenPath(nodeMap=nodeMap, path=absolutePath)
-                    requiresJump = not checkGroundPathValidity(
-                        flattenedPath=flattenedAbsolutePath,
-                    )
-
-                    # However extend the path using absolutePath if necessary
-                    # // This could be removed to improve performance, however its current impact is negligible
-                    if requiresJump and abs(endWaypoint[1] - startWaypoint[1]) > 2:
-                        # // Adding a diagonal node to the path is a simple way to indicate a jump since the enemy only jumps with its max power
-                        finalPath.append(startWaypoint)
-                        if endWaypoint[1] - startWaypoint[1] > 0 and nodeMap[startWaypoint[0] - 1][startWaypoint[1] + 1] != "#": # Going right and the top right adjacent node is free
-                            finalPath.append((startWaypoint[0] - 1, startWaypoint[1] + 1))
-                        elif endWaypoint[1] - startWaypoint[1] < 0 and nodeMap[startWaypoint[0] - 1][startWaypoint[1] - 1] != "#": # Going left and the top left adjacent node is free
-                            finalPath.append(tuple((startWaypoint[0] - 1, startWaypoint[1] - 1)))
-                    elif requiresJump:
-                        finalPath.extend(absolutePath)
-                    else:
-                        finalPath.extend(flattenedAbsolutePath)
+                    finalPath.extend(flattenedAbsolutePath)
             finalPath.extend(
                 flattenPath(
                     nodeMap=nodeMap,
@@ -388,12 +399,12 @@ def pathfind(
                     ),
                 )
             )
-        else:
-            #reversed = list(tuple(flattenedPath)) # Disconnected copy of the original flattenedPath
-            #reversed.reverse() # 
-            #return reversed  # if start.getCoord()[1] < end.getCoord()[1] else flattenedPath
-            flattenedPath.reverse() # Unreverse the reversed flattenedPath
+            finalPath.append(end.getCoord())
+        elif checkGroundPathValidity(flattenedPath=flattenedPath):
+            flattenedPath.reverse()  # Unreverse the reversed flattenedPath
             return flattenedPath
+        else:
+            return []
         return finalPath
     else:
         return []
@@ -408,8 +419,10 @@ def canFallTowardsPoint(
     nodeSep: float,
     dirEffect: int,
 ):
-    fallNodes = list[precompile.Point]( # // Casting for readability and type checking purposes
-        precompile.getPointsAcrossCurve( # // Getting a parabola of points starting at the max height
+    fallNodes = list[
+        precompile.Point
+    ](  # // Casting for readability and type checking purposes
+        precompile.getPointsAcrossCurve(  # // Getting a parabola of points starting at the max height
             u=0,
             g=gravity,
             origin=origin,
@@ -425,35 +438,29 @@ def canFallTowardsPoint(
             return True
     return False
 
-# Checks if 
-#def checkGroundPathValidity(
-#    jumpHeightInNodes: int, flattenedPath: list[tuple[int, int]]
-#) -> bool:
-#    currentIndex = 0
-#    nextIndex = 1
-#    for index in range(0, len(flattenedPath) - 1):
-#        currentY = flattenedPath[currentIndex][0]
-#        nextY = flattenedPath[nextIndex][0]
-#        if currentY > nextY and currentY - nextY > jumpHeightInNodes:
-#            return False
-#        currentIndex += 1
-#        nextIndex += 1
-#    return True
 
 # Checks if the path is reachable by only moving across the ground
-def checkGroundPathValidity(
-    flattenedPath: list[tuple[int, int]]
-) -> bool:
-    currentIndex = 0
-    nextIndex = 1
-    for index in range(0, len(flattenedPath) - 1):
-        currentY = flattenedPath[currentIndex][0]
-        nextY = flattenedPath[nextIndex][0]
-        if currentY != nextY:
-            return False
-        currentIndex += 1
-        nextIndex += 1
-    return True
+def checkGroundPathValidity(flattenedPath: list[tuple[int, int]], strict: bool = True) -> bool:
+    if strict: # strict == true => the function checks if the end is reachable WITHOUT the y-coord changing
+        currentIndex = 0
+        nextIndex = 1
+        for index in range(0, len(flattenedPath) - 1):
+            currentY = flattenedPath[currentIndex][0]
+            nextY = flattenedPath[nextIndex][0]
+            if currentY != nextY:
+                return False
+            currentIndex += 1
+            nextIndex += 1
+        return True
+    else: # strict == false => checks if the end is reachable, allowing y-coord to increase (go down)
+        currentLowestY = flattenedPath[0][0]
+        for node in flattenedPath:
+            if node[0] < currentLowestY:
+                return False
+            elif node[0] > currentLowestY:
+                currentLowestY = node[0]
+        return True
+
 
 # Reduces code repetition and cleans messy min max statements
 # Clamps a value to only being between 2 floats
@@ -466,7 +473,7 @@ def clamp(inp: float, mini: float, maxi: float, invert: bool = False):
 # Finds the nearest empty node to the player
 # // Going in the order: up, left, right, down
 # // Returns its input as default
-def findFreeNode(nodeMap, start: tuple[int, int]): # (y, x)
+def findFreeNode(nodeMap, start: tuple[int, int]):  # (y, x)
     start = [start[0], start[1]]
     if (
         nodeMap[clamp(start[0] - 1, 0, len(nodeMap) - 1)][
@@ -475,64 +482,88 @@ def findFreeNode(nodeMap, start: tuple[int, int]): # (y, x)
         != "#"
     ):
         return (start[0] - 1, start[1])
-    elif nodeMap[clamp(start[0], 0, len(nodeMap) - 1)][
-        clamp(start[1] - 1, 0, len(nodeMap[0]) - 1)
-    ] != "#":
+    elif (
+        nodeMap[clamp(start[0], 0, len(nodeMap) - 1)][
+            clamp(start[1] - 1, 0, len(nodeMap[0]) - 1)
+        ]
+        != "#"
+    ):
         return (start[0], start[1] - 1)
-    elif nodeMap[clamp(start[0], 0, len(nodeMap) - 1)][
-        clamp(start[1] - 1, 0, len(nodeMap[0]) + 1)
-    ] != "#":
+    elif (
+        nodeMap[clamp(start[0], 0, len(nodeMap) - 1)][
+            clamp(start[1] - 1, 0, len(nodeMap[0]) + 1)
+        ]
+        != "#"
+    ):
         return (start[0], start[1] + 1)
-    elif nodeMap[clamp(start[0] + 1, 0, len(nodeMap))][
-        start[1], 0, len(nodeMap[0])
-    ] != "#":
+    elif (
+        nodeMap[clamp(start[0] + 1, 0, len(nodeMap))][start[1], 0, len(nodeMap[0])]
+        != "#"
+    ):
         return (start[0] + 1, start[1])
     else:
-        raise Exception("No free node was found.") # Triggers the try: except: in main() to return []
-        #return tuple(start)
+        raise Exception(
+            "No free node was found."
+        )  # Triggers the try: except: in main() to return []
 
-
-#def shortenPath(path):
-#    index = 0
-#    while index + 2 < len(path):
-#        xDiff = abs(path[index + 2][1] - path[index][1])
-#        yDiff = abs(path[index + 2][0] - path[index][0])
-#        if xDiff >= 1 and yDiff >= 1:
-#            path.pop(index + 1)
-#        index += 1
-#    return path
 
 # // Removes most duplicates from the path
 # // More to help with reading the debug outputs than with performance
 # // Little to no performance impact
 def shortenPath(path):
     index = 0
-    while index + 1 < len(path): # Iterate using a while loop since we're controlling when to increment index
+    while index + 1 < len(
+        path
+    ):  # Iterate using a while loop since we're controlling when to increment index
         if path[index] == path[index + 1]:
             path.pop(index + 1)
         else:
-            index += 1 # Only increment index when an index hasn't been removed
+            index += 1  # Only increment index when an index hasn't been removed
+    #if path[len(path) - 1] != path[len(path) - 2]:
+    #    path.append(path[])
     return path
 
 
+def removeCorners(path, nodeMap):
+    clean = [path[0]]
+    index = 1
+    previousNodeGrounded = True
+    while index < len(path):
+        # Even though clamps are messy and make the code difficult to read,
+        # they're used so I can compare the current index to len(nodeMap) in the same if statement
+        currentNodeGrounded = nodeMap[
+            clamp(inp=path[index][0] + 1, mini=0, maxi=len(nodeMap) - 1)
+        ][path[index][1]] == "#" and path[index][0] + 1 <= len(nodeMap)
+
+        # Only evaluates true if the node after the potential corner is in the same column
+        try:
+            nextAboveCurrent = path[index + 1][0] - path[index][0] < 0 and path[index + 2][1] == path[index + 1][1]
+        except:
+            nextAboveCurrent = True
+        # Checks if the currentNode has no floor and the next node is above the currentNode
+        if previousNodeGrounded and (not currentNodeGrounded) and nextAboveCurrent:
+            pass  # Skip node addition if so
+        else:
+            clean.append(path[index]) # Otherwise add the node
+        previousNodeGrounded = bool(currentNodeGrounded)
+        index += 1
+    return clean
+
+
 def main(
-    start: tuple[int, int], # (y, x)
-    end: tuple[int, int], # (y, x)
-    precompiledData: precompile.PrecompileResponse, # Dictionary containing metadata about the graph from precompile
-    nodeMap: list[list[str]], # 2D list of which coordinates are walls
-    nodeSep: int,
-    jumpForce: float,
-    gravity: float,
+    start: tuple[int, int],  # (y, x)
+    end: tuple[int, int],  # (y, x)
+    precompiledData: precompile.PrecompileResponse,  # Class containing metadata about the graph from precompile
+    nodeMap: list[list[str]],  # 2D list of which coordinates are walls
 ):
 
     # Organising precompiledData
-    #graph = precompiledData["nodes"]
-#
-    #waypoints = precompiledData["waypointData"]["waypoints"]
-    #disconnectedWaypoints = precompiledData["waypointData"]["disconnectedWaypoints"]
     graph = precompiledData.NODES
     waypoints = precompiledData.WAYPOINTDATA.WAYPOINTS
     disconnectedWaypoints = precompiledData.WAYPOINTDATA.DISCONNECTEDWAYPOINTS
+
+    for x in range(0, len(graph)):
+        graph[x] = (int(graph[x][0]), int(graph[x][1]))
 
     try:
         # Make sure start and end are free
@@ -540,21 +571,35 @@ def main(
             start = findFreeNode(nodeMap=nodeMap, start=start)
         if nodeMap[end[0]][end[1]] != " ":
             end = findFreeNode(nodeMap=nodeMap, start=end)
-        
-        end = precompile.getLowerNodes(
-            topNodes=[
-                precompile.Point(x=end[1], y=end[0], nodeMap=nodeMap),
-            ],
-            nodeMap=nodeMap,
-        ).FLOORNODES[0].getCoord() # And that end has a floor node to travel to
+
+        start = (
+            precompile.getLowerNodes(
+                topNodes=[
+                    precompile.Point(x=start[1], y=start[0], nodeMap=nodeMap),
+                ],
+                nodeMap=nodeMap,
+            )
+            .FLOORNODES[0]
+            .getCoord()
+        )
+
+        end = (
+            precompile.getLowerNodes(
+                topNodes=[
+                    precompile.Point(x=end[1], y=end[0], nodeMap=nodeMap),
+                ],
+                nodeMap=nodeMap,
+            )
+            .FLOORNODES[0]
+            .getCoord()
+        )  # and that end has a floor node to travel to
     except:
-        return [] # Otherwise return []
+        return []  # Otherwise return []
 
     # Then run the main pathfinding algorithm
     path = pathfind(
         graph=graph,
         nodeMap=nodeMap,
-        nodeSep=nodeSep,
         start=(int(start[0]), int(start[1])),
         end=(
             int(end[0]),
@@ -562,59 +607,35 @@ def main(
         ),
         waypoints=waypoints,
         disconnectedWaypoints=list(disconnectedWaypoints),
-        jumpForce=jumpForce,
-        gravity=gravity,
     )
 
-    path = shortenPath(path=path)
+    if len(path) != 0: # Avoids out of range errors if the path was invalid
+        path = shortenPath(path=path)
+        path = removeCorners(path=path, nodeMap=nodeMap)
 
     return path
 
 
-# startTestSet = [
-#    (29, 80),
-#    (14, 0),
-#    (18, 38),
-#    (18, 38)
-# ]
-# endTestSet = [
-#    (18, 38),
-#    (29, 0),
-#    (18, 41),
-#    (20, 5)
-# ]
-#
-
-testGraph = precompile.loadMap(fileName="Prototype1/transfer/Maps/a.csv", invalidKeys=[5, 6, 2, -1])
 gravityAccel = 9.81 * 15
 nodeSep = 15
-enemyData = {
-   "jumpForce": 125,
-   "maxSpeed": (100, 50)
-}
-response = precompile.precompileGraph(
-   nodeMap=testGraph,
-   nodeSep=nodeSep,
-   gravity=gravityAccel,
-   enemyData=enemyData,
-   origin=(6, 0)
-)
-debug = True
-t = time.time()
+enemyData = {"jumpForce": 140, "maxSpeed": (100, 50)}
 
-if debug:
-    a = main(
-        start=(6, 0),
-        end=(2, 5),
-        precompiledData=response,
-        nodeMap=testGraph,
-        nodeSep=nodeSep,
-        jumpForce=enemyData["jumpForce"],
-        gravity=gravityAccel
-    )
-    for x in a:
-       testGraph[x[0]][x[1]] = "x"
-    for x in testGraph:
-        print(x)
-e = time.time()
-print(e - t)
+#mapName = "Maps/testMapMove2.csv"
+#testGraph = precompile.loadMap(fileName=mapName, invalidKeys=[5, 6, 2, -1])
+#precompile.outputTestGraph(mapName)
+#
+#precompiledGraph = precompile.precompileGraph(
+#    nodeMap=testGraph,
+#    nodeSep=nodeSep,
+#    gravity=9.81 * 15,
+#    enemyData=enemyData,
+#    origin=(5, 1),
+#)
+#response = main(
+#    start=(5, 1), end=(2, 15), precompiledData=precompiledGraph, nodeMap=testGraph
+#)
+#for x in response:
+#    testGraph[x[0]][x[1]] = "x"
+#for row in testGraph:
+#    print(row)
+#print(response)

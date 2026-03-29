@@ -37,9 +37,9 @@ allWeapons = {
 
 allCharacters = {
     0: {
-        "name": "OJ",
+        "name": "TestChr1",
         "imgPath": "Sprites/ItemSprite0.png",
-        "hp": 100,
+        "hp": 25,
         "defense": 5,
         "speed": 1,
         "jumpForce": 100,
@@ -47,9 +47,9 @@ allCharacters = {
         "size": pygame.Vector2(50, 50)
     },
     1: {
-        "name": "man",
+        "name": "TestChr2",
         "imgPath": "Sprites/ItemSprite1.png",
-        "hp": 100,
+        "hp": 1000,
         "defense": 5,
         "speed": 1,
         "jumpForce": 150,

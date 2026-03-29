@@ -10,7 +10,7 @@ import typing
 pygame.init()
 
 class HealthBar(pygame.sprite.Sprite):
-    def __init__(self, pSize, position, fontName, maxHP, currentHP):
+    def __init__(self, size, position, fontName, maxHP, currentHP):
         super().__init__()
 
         # Metadata
@@ -20,10 +20,10 @@ class HealthBar(pygame.sprite.Sprite):
 
         # Surfaces
         self.__remainingBar = pygame.Surface(
-            size=pSize * (self.__currentHP / self.__maxHP)
+            size=size * (self.__currentHP / self.__maxHP)
         )
         self.__remainingBar.fill((0, 255, 0))
-        self.__totalBar = pygame.Surface(size=pSize)
+        self.__totalBar = pygame.Surface(size=size)
         self.__totalBar.fill((255, 0, 0))
 
         # Rects
@@ -39,7 +39,7 @@ class HealthBar(pygame.sprite.Sprite):
         self.__textRect = pygame.Surface.get_rect(self.__text)
 
         # Shown attributes and rect alignment
-        self.surface = pygame.Surface(size=pSize)
+        self.surface = pygame.Surface(size=size)
         self.rect = pygame.Surface.get_rect(self.surface)
         self.rect.topleft = position
 

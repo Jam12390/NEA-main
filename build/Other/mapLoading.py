@@ -19,13 +19,15 @@ class MapResponse():
             mapData,
             items,
             startPos,
-            enemyStartPositions
+            enemyStartPositions,
+            playerDistFromCentre
         ):
         # // These variables are constant after being initialised and so are capitalised
         self.MAPDATA = mapData
         self.ITEMS = items
         self.STARTPOS = startPos
         self.ENEMYSTARTPOSITIONS = enemyStartPositions
+        self.PLAYERDISTFROMCENTRE = playerDistFromCentre
 
 def loadMapData(
     mapName: str,
@@ -33,11 +35,14 @@ def loadMapData(
     # // Passed as a dictionary to ease scaling tile types in the future
     KEYS: dict[str, int],
     TILESIZE: pygame.Vector2,
-    baseScreenDimensions: tuple[int, int],
+    baseScreenDimensions: pygame.Vector2,
     tileData: dict[int, tuple[str, float]] = {
-        0: ("Sprites/DefaultSprite.png", (0.75, 0.5))
+        #0: ("Sprites/DefaultSprite.png", (0.75, 0.5))
+        0: ("Sprites/TileSprite.png", (0.75, 0.5))
     },  # ID: (spritePath, frictionCoef => (x, y))
 ) -> MapResponse:
+    additionalRows = 3
+
     INVALIDKEYS = list(KEYS.values())
     INVALIDKEYS.append(-1) # Constant from now on
 
@@ -53,7 +58,6 @@ def loadMapData(
         segmentedData = []
         for row in data:
             segmentedData.append([int(x) for x in row[0].split(",")])
-        segmentedData.pop(0)
         map.close()
 
     currentNodePosition = [
@@ -65,6 +69,14 @@ def loadMapData(
         TILESIZE.x // 2,
         TILESIZE.y // 2
     )
+
+    longestRow = 0
+    for row in segmentedData:
+        if len(row) > longestRow:
+            longestRow = len(row)
+    
+    for x in range(additionalRows):
+        segmentedData.insert(0, [-1 for i in range(0, longestRow)])
 
     for row in segmentedData:
         # Reset column index
@@ -132,6 +144,7 @@ def loadMapData(
                     (currentNodePosition[1] * TILESIZE.x),
                     (currentNodePosition[0] * TILESIZE.y)
                 ) + initialOffset
+                startPos.y += initialOffset.y
             elif column == KEYS["ITEMKEY"]:
                 # Get a random item
                 ID = random.randint(0, len(dictionaries.allItems.keys()) - 1)
@@ -157,7 +170,7 @@ def loadMapData(
                 enemyPos = pygame.Vector2(
                     (currentNodePosition[1] * TILESIZE.x),
                     (currentNodePosition[0] * TILESIZE.y)
-                ) + initialOffset
+                ) #+ initialOffset
                 enemyStartPositions.append(enemyPos)
 
                 # // Future code could look like this for attaching IDs to enemy spawn points:
@@ -192,5 +205,20 @@ def loadMapData(
         mapData=mapData,
         items=items,
         startPos=startPos,
-        enemyStartPositions=enemyStartPositions
+        enemyStartPositions=enemyStartPositions,
+        playerDistFromCentre=playerDistFromCentre
     )
+
+debug = False
+if debug:
+    a = loadMapData(
+        mapName="testMapMove3",
+        KEYS={
+            "STARTKEY": 5,
+            "ITEMKEY": 6,
+            "ENEMYKEY": 2
+        },
+        TILESIZE=pygame.Vector2(76, 76),
+        baseScreenDimensions=pygame.Vector2(1000, 800)
+    )
+    pass
