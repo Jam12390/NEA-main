@@ -208,17 +208,3 @@ def loadMapData(
         enemyStartPositions=enemyStartPositions,
         playerDistFromCentre=playerDistFromCentre
     )
-
-debug = False
-if debug:
-    a = loadMapData(
-        mapName="testMapMove3",
-        KEYS={
-            "STARTKEY": 5,
-            "ITEMKEY": 6,
-            "ENEMYKEY": 2
-        },
-        TILESIZE=pygame.Vector2(76, 76),
-        baseScreenDimensions=pygame.Vector2(1000, 800)
-    )
-    pass

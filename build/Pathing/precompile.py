@@ -1012,8 +1012,3 @@ def outputTestGraph(fileName: str) -> None: # takes the path to the map, not the
     data = loadMap(fileName=fileName, invalidKeys=[5, 6, 2, -1])
     for row in data:
         print(row)
-    pass
-
-fileName = "./Maps/testMapMove2.csv"
-#outputTestGraph(fileName=fileName)
-main(map=fileName, origin=(5, 0))

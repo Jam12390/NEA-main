@@ -614,28 +614,3 @@ def main(
         path = removeCorners(path=path, nodeMap=nodeMap)
 
     return path
-
-
-gravityAccel = 9.81 * 15
-nodeSep = 15
-enemyData = {"jumpForce": 140, "maxSpeed": (100, 50)}
-
-#mapName = "Maps/testMapMove2.csv"
-#testGraph = precompile.loadMap(fileName=mapName, invalidKeys=[5, 6, 2, -1])
-#precompile.outputTestGraph(mapName)
-#
-#precompiledGraph = precompile.precompileGraph(
-#    nodeMap=testGraph,
-#    nodeSep=nodeSep,
-#    gravity=9.81 * 15,
-#    enemyData=enemyData,
-#    origin=(5, 1),
-#)
-#response = main(
-#    start=(5, 1), end=(2, 15), precompiledData=precompiledGraph, nodeMap=testGraph
-#)
-#for x in response:
-#    testGraph[x[0]][x[1]] = "x"
-#for row in testGraph:
-#    print(row)
-#print(response)
