@@ -91,16 +91,7 @@ class WallObj(pygame.sprite.Sprite):
         self.kill()
 
     def update(self) -> None:
-        # offset = pygame.Vector2(
-        #    round(offset.x),
-        #    round(offset.y)
-        # )
-        # self.rect.centerx += offset.x
-        # self.rect.centery += offset.y
         pass
-
-    # def update(self):
-    #    pass
 
 
 class ItemUIWindow(pygame.sprite.Sprite):
@@ -167,10 +158,8 @@ class Item(pygame.sprite.Sprite):
         self.UIWindow = UIWindow
 
     def update(self):
-        # self.rect.centerx += playerMoved.x
-        # self.rect.centery += playerMoved.y
         self.surface.blit(self.image, (175 // 2, 175 // 2))
-        self.UIWindow.rect.center = (self.rect.centerx, self.rect.centery - 200)
+        self.UIWindow.rect.center = (self.rect.centerx, self.rect.centery - 125)
         self.UIWindow.update()
 
     def pickup(self, target):

@@ -398,8 +398,6 @@ def redraw():  # It's important to note that redraw() DOES NOT update() any of t
 
     # Draw sprites here
 
-    screen.blit(player.image, player.rect)
-
     if player.weapon.currentlyAttacking:
         screen.blit(player.weapon.image, player.weapon.rect)
 
@@ -414,6 +412,8 @@ def redraw():  # It's important to note that redraw() DOES NOT update() any of t
             screen.blit(item.UIWindow.surface, item.UIWindow.rect)
 
     enemies.draw(screen)
+
+    screen.blit(player.image, player.rect)
 
     screen.blit(player.healthBar.surface, player.healthBar.rect)
 

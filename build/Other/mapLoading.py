@@ -161,7 +161,7 @@ def loadMapData(
                         UIWindow=OtherClasses.ItemUIWindow(
                             itemID=ID,
                             replaces=dictionaries.allItems[ID]["replaces"],
-                            pos=pygame.Vector2(itemPos.x + 200, itemPos.y - 125),
+                            pos=pygame.Vector2(itemPos.x + 200, itemPos.y),
                             size=(400, 150),
                         ),
                     )
